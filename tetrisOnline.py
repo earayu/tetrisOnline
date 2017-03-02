@@ -331,7 +331,7 @@ def terminate():
 #                 pygame.draw.rect(SURFACE,RED,rect)
 
 pygame.init()
-SURFACE = pygame.display.set_mode((800,800))
+SURFACE = pygame.display.set_mode((WINDOW_WIDTH*2+50,WINDOW_HEIGHT))
 SURFACE.fill(WHITE)
 pygame.display.set_caption("俄罗斯方块")
 fpsClock = pygame.time.Clock()
@@ -388,9 +388,9 @@ while True:
         frameCount2 = 0
         board2.move_piece(key_dir2)
 
-    game.draw(10,10)
+    game.draw(0,0)
 
-    game2.draw(333,333)
+    game2.draw(280,0)
 
     # assert board.board == board2.board
 
