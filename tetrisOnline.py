@@ -352,6 +352,7 @@ frameCount2 = 0
 while True:
     frameCount += 1
     frameCount2 += 1
+
     for event in pygame.event.get():
         key_dir = None
         key_dir2 = None
@@ -361,10 +362,11 @@ while True:
 
         pressed_keys = pygame.key.get_pressed()
 
-        if pressed_keys[K_UP]:
-            board.move_piece(K_UP)
-        if pressed_keys[K_w]:
-            board2.move_piece(K_UP)
+        if event.type == KEYDOWN:
+            if event.key == K_UP:
+                board.move_piece(K_UP)
+            if event.key == K_w:
+                board2.move_piece(K_UP)
 
         if pressed_keys[K_LEFT]:
             key_dir = K_LEFT
@@ -378,10 +380,6 @@ while True:
             key_dir = K_DOWN
         if pressed_keys[K_s]:
             key_dir2 = K_s
-
-
-
-
 
     if key_dir in [K_LEFT,K_RIGHT,K_DOWN] and frameCount > 4:
         frameCount = 0
