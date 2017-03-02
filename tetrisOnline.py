@@ -23,42 +23,12 @@ RED = (255,0,0)
 
 class Shape(object):
     _shapes = [
-        [
-            [0, 1, 0, 0],
-            [0, 1, 0, 0],
-            [0, 1, 0, 0],
-            [0, 1, 0, 0]
-        ],
-        [
-            [0, 0, 0, 0],
-            [0, 1, 1, 0],
-            [0, 1, 1, 0],
-            [0, 0, 0, 0]],
-        [
-            [0, 0, 0, 0],
-            [0, 1, 0, 0],
-            [1, 1, 1, 0],
-            [0, 0, 0, 0]
-        ],
-        [
-            [0, 0, 0, 0],
-            [0, 0, 1, 0],
-            [0, 0, 1, 0],
-            [0, 1, 1, 0]
-        ],
-        [
-            [0, 0, 0, 0],
-            [0, 0, 1, 0],
-            [0, 1, 1, 0],
-            [0, 1, 0, 0]
-        ],
-        [
-            [0, 0, 0, 0],
-            [0, 1, 0, 0],
-            [0, 1, 1, 0],
-            [0, 0, 1, 0]
-        ],
-    ]
+        [[0, 1, 0, 0], [0, 1, 0, 0], [0, 1, 0, 0], [0, 1, 0, 0]],
+        [[0, 0, 0, 0], [0, 1, 1, 0], [0, 1, 1, 0], [0, 0, 0, 0]],
+        [[0, 0, 0, 0], [0, 1, 0, 0], [1, 1, 1, 0], [0, 0, 0, 0]],
+        [[0, 0, 0, 0], [0, 0, 1, 0], [0, 0, 1, 0], [0, 1, 1, 0]],
+        [[0, 0, 0, 0], [0, 0, 1, 0], [0, 1, 1, 0], [0, 1, 0, 0]],
+        [[0, 0, 0, 0], [0, 1, 0, 0], [0, 1, 1, 0], [0, 0, 1, 0]],]
 
     def __init__(self, x=0, y=0):
         self.shape = random.choice(self._shapes)
@@ -256,25 +226,38 @@ class Board():
             self.rotate_shape()
         elif motion_state == K_DOWN:
             self.move_down()
+        elif motion_state == K_d:
+            self.move_right()
+        elif motion_state == K_w:
+            self.rotate_shape()
+        elif motion_state == K_s:
+            self.move_down()
+        elif motion_state == K_a:
+            self.move_left()
 
     def draw_game_board(self):
-        for y, row in enumerate(board.board):
+        bsurface = pygame.Surface((WINDOW_WIDTH,WINDOW_HEIGHT))
+
+        for y, row in enumerate(self.board):
             for x, col in enumerate(row):
                 if col == 1 or col == 1:
-                    self.draw_block(x, y)
+                    self.draw_block(bsurface, x, y)
 
         for y in range(4):
             for x in range(4):
                 dx = x + self.active_shape.x
                 dy = y + self.active_shape.y
                 if self.active_shape.shape[y][x] == 1:
-                    self.draw_block(dx, dy)
+                    self.draw_block(bsurface, dx, dy)
 
-    def draw_block(self, x, y):
+        return bsurface
+
+
+    def draw_block(self, surface, x, y):
         y += 1  # since calculated_height does not account for 0-based index
         # self.block.blit(x * WINDOW_WIDTH, self.calculated_height - y * WINDOW_HEIGHT)
         rect = pygame.Rect(x * BLOCK_SIZE, y * BLOCK_SIZE, BLOCK_SIZE,BLOCK_SIZE)
-        pygame.draw.rect(SURFACE,RED,rect)
+        pygame.draw.rect(surface,RED,rect)
 
 
 class Game(object):
@@ -310,78 +293,97 @@ class Game(object):
             return True
         return False
 
-    def keyboard_handler(self, motion):
-        self.board.move_piece(motion)
+    # def keyboard_handler(self, motion):
+    #     self.board.move_piece(motion)
 
-    def on_lines(self, num_lines):
-        self.score += (num_lines * self.level)
-        self.lines += num_lines
-        if self.lines / 10 > self.level:
-            self.level = self.lines / 10
+    # def on_lines(self, num_lines):
+    #     self.score += (num_lines * self.level)
+    #     self.lines += num_lines
+    #     if self.lines / 10 > self.level:
+    #         self.level = self.lines / 10
 
-    def on_game_over(self):
-        self.reset()
+    # def on_game_over(self):
+    #     self.reset()
 
-    def cycle(self):
-        if self.should_update():
-            self.board.move_down()
-            # self.update_caption()
+    # def cycle(self):
+    #     if self.should_update():
+    #         self.board.move_down()
+    #         # self.update_caption()
 
-    def toggle_pause(self):
-        self.is_paused = not self.is_paused
+    # def toggle_pause(self):
+    #     self.is_paused = not self.is_paused
 
     # 我自定义的方法
-    def draw(self):
-        self.board.draw_game_board()
+    def draw(self,x,y):
+        BSURFACE = self.board.draw_game_board()
+        SURFACE.blit(BSURFACE,(x,y))
 
 
 def terminate():
     pygame.quit()
     sys.exit()
 
-def drawShape(SURFACE, shape):
-    for i in range(len(shape.shape)):
-        for j in range(len(shape.shape[i])):
-            if shape.shape[i][j]==1:
-                rect = pygame.Rect((shape.x+i)*BLOCK_SIZE,(shape.y+j)*BLOCK_SIZE,BLOCK_SIZE,BLOCK_SIZE)
-                pygame.draw.rect(SURFACE,RED,rect)
+# def drawShape(SURFACE, shape):
+#     for i in range(len(shape.shape)):
+#         for j in range(len(shape.shape[i])):
+#             if shape.shape[i][j]==1:
+#                 rect = pygame.Rect((shape.x+i)*BLOCK_SIZE,(shape.y+j)*BLOCK_SIZE,BLOCK_SIZE,BLOCK_SIZE)
+#                 pygame.draw.rect(SURFACE,RED,rect)
 
 pygame.init()
-SURFACE = pygame.display.set_mode((WINDOW_WIDTH,WINDOW_HEIGHT))
+SURFACE = pygame.display.set_mode((800,800))
+SURFACE.fill(WHITE)
 pygame.display.set_caption("俄罗斯方块")
-
 fpsClock = pygame.time.Clock()
 
 board = Board(WIDTH,HEIGHT,None)
 game = Game(SURFACE, board, 1)
 
+board2 = Board(WIDTH,HEIGHT,None)
+game2 = Game(SURFACE, board2, 1)
+
+
+
 key_dir = None
+key_dir2 = None
 frameCount = 0
-last = None
+frameCount2 = 0
 
 while True:
     frameCount += 1
+    frameCount2 += 1
     for event in pygame.event.get():
         key_dir = None
+        key_dir2 = None
         if event.type == QUIT:
             terminate()
         if event.type == KEYDOWN:
             key_dir = event.key
             if key_dir == K_UP:
                 board.move_piece(K_UP)
+            key_dir2 = event.key
+            if key_dir2 == K_w:
+                board2.move_piece(K_UP)
 
     if key_dir in [K_LEFT,K_RIGHT,K_DOWN] and frameCount > 4:
         frameCount = 0
         board.move_piece(key_dir)
+    if key_dir2 in [K_s, K_a, K_d] and frameCount2 > 4:
+        frameCount2 = 0
+        board2.move_piece(key_dir2)
 
-    SURFACE.fill(WHITE)
+    game.draw(10,10)
 
-    game.draw()
+    game2.draw(333,333)
+
+    # assert board.board == board2.board
 
     # 每隔一定帧数下降一格
     if game.should_update():
         board.move_down()
+        board2.move_down()
 
+    # 渲染一帧
     pygame.display.update()
 
     fpsClock.tick(FPS)
