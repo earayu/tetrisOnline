@@ -3,14 +3,15 @@ from pygame.locals import *
 
 
 # 游戏基本设置
-WINDOW_WIDTH = 270
-WINDOW_HEIGHT = 450
+WIDTH = 16
+HEIGHT = 28
 
-BOX_SIZE = 15
+BLOCK_SIZE = 15
 
-assert WINDOW_WIDTH % BOX_SIZE ==0 and WINDOW_HEIGHT % BOX_SIZE ==0, '窗口大小不合适'
+WINDOW_WIDTH = WIDTH*BLOCK_SIZE
+WINDOW_HEIGHT = HEIGHT*BLOCK_SIZE
 
-FPS = 5
+FPS = 60
 
 # 颜色
 WHITE = (255,255,255)
@@ -108,6 +109,231 @@ class Shape(object):
                     return y
 
 
+class Board():
+    active_shape = None
+    pending_shape = None
+    board = None
+
+    def __init__(self, width, height, block):
+        self.width, self.height = width, height
+        self.block = block
+        self.calculated_height = self.height * BLOCK_SIZE
+        self.calculated_width = self.width * BLOCK_SIZE
+        self.reset()
+
+    # 初始化窗口为全部空白
+    def reset(self):
+        self.board = []
+        for row in range(self.height):
+            self.board.append([0] * self.width)
+
+        self.pending_shape = Shape()
+        self.add_shape()
+
+    def add_shape(self):
+        self.active_shape = self.pending_shape.clone()
+        self.active_shape.x = self.width // 2 - self.active_shape.left_edge
+        self.active_shape.y = -1
+        self.pending_shape = Shape()
+
+        if self.is_collision():
+            self.reset()
+            #TODO 输了
+            # self.dispatch_event('on_game_over')
+
+    # 旋转方块，S和Z形方块好像有点问题，旋转位置不对。需要碰撞检测，查看能否旋转
+    def rotate_shape(self):
+        rotated_shape = self.active_shape.clone()
+        rotated_shape.rotate()
+
+        if rotated_shape.left_edge + rotated_shape.x < 0:
+            rotated_shape.x = -rotated_shape.left_edge
+        elif rotated_shape.right_edge + rotated_shape.x >= self.width:
+            rotated_shape.x = self.width - rotated_shape.right_edge - 1
+
+        if rotated_shape.bottom_edge + rotated_shape.y > self.height:
+            return False
+
+        if not self.is_collision(rotated_shape):
+            self.active_shape = rotated_shape
+
+    def move_left(self):
+        self.active_shape.x -= 1
+        if self.out_of_bounds() or self.is_collision():
+            self.active_shape.x += 1
+            return False
+        return True
+
+    def move_right(self):
+        self.active_shape.x += 1
+        if self.out_of_bounds() or self.is_collision():
+            self.active_shape.x -= 1
+            return False
+        return True
+
+    def move_down(self):
+        self.active_shape.y += 1
+
+        if self.check_bottom() or self.is_collision():
+            self.active_shape.y -= 1
+            # 着陆
+            self.shape_to_board()
+            self.add_shape()
+            return False
+        return True
+
+    #查看是否出界
+    def out_of_bounds(self, shape=None):
+        shape = shape or self.active_shape
+        if shape.x + shape.left_edge < 0:
+            return True
+        elif shape.x + shape.right_edge >= self.width:
+            return True
+        return False
+
+    def check_bottom(self, shape=None):
+        shape = shape or self.active_shape
+        # TODO 检查一下这个方法
+        if shape.y + shape.bottom_edge + 1 >= self.height:
+            return True
+        return False
+
+    # 碰撞检测，不计算边界
+    def is_collision(self, shape=None):
+        shape = shape or self.active_shape
+        for y in range(4):
+            for x in range(4):
+                if y + shape.y < 0:
+                    continue
+                if shape.shape[y][x] and self.board[y + shape.y][x + shape.x]:
+                    return True
+        return False
+
+    #
+    def test_for_line(self):
+        for y in range(self.height - 1, -1, -1):
+            counter = 0
+            for x in range(self.width):
+                if self.board[y][x] == 1:
+                    counter += 1
+            if counter == self.width:
+                self.process_line(y)
+                return True
+        return False
+
+    def process_line(self, y_to_remove):
+        for y in range(y_to_remove - 1, -1, -1):
+            for x in range(self.width):
+                self.board[y + 1][x] = self.board[y][x]
+
+    def shape_to_board(self):
+        # transpose onto board
+        # while test for line, process & increase score
+        for y in range(4):
+            for x in range(4):
+                dx = x + self.active_shape.x
+                dy = y + self.active_shape.y
+                if self.active_shape.shape[y][x] == 1:
+                    self.board[dy][dx] = 1
+
+        lines_found = 0
+        while self.test_for_line():
+            lines_found += 1
+
+        # TODO 计分
+        # if lines_found:
+        #     self.dispatch_event('on_lines', lines_found)
+
+    def move_piece(self, motion_state):
+        if motion_state == K_LEFT:
+            self.move_left()
+        elif motion_state == K_RIGHT:
+            self.move_right()
+        elif motion_state == K_UP:
+            self.rotate_shape()
+        elif motion_state == K_DOWN:
+            self.move_down()
+
+    def draw_game_board(self):
+        for y, row in enumerate(board.board):
+            for x, col in enumerate(row):
+                if col == 1 or col == 1:
+                    self.draw_block(x, y)
+
+        for y in range(4):
+            for x in range(4):
+                dx = x + self.active_shape.x
+                dy = y + self.active_shape.y
+                if self.active_shape.shape[y][x] == 1:
+                    self.draw_block(dx, dy)
+
+    def draw_block(self, x, y):
+        y += 1  # since calculated_height does not account for 0-based index
+        # self.block.blit(x * WINDOW_WIDTH, self.calculated_height - y * WINDOW_HEIGHT)
+        rect = pygame.Rect(x * BLOCK_SIZE, y * BLOCK_SIZE, BLOCK_SIZE,BLOCK_SIZE)
+        pygame.draw.rect(SURFACE,RED,rect)
+
+
+class Game(object):
+    ticks = 0
+    factor = 4
+    frame_rate = 60.0
+
+    is_paused = False
+
+    def __init__(self, window_ref, board, starting_level=1):
+        self.window_ref = window_ref
+        self.board = board
+        self.starting_level = int(starting_level)
+        # self.register_callbacks()
+        self.reset()
+
+    def register_callbacks(self):
+        self.board.push_handlers(self)
+
+    def reset(self):
+        self.level = self.starting_level
+        self.lines = 0
+        self.score = 0
+
+    def should_update(self):
+        if self.is_paused:
+            return False
+
+        self.ticks += 1
+        # level越高，刷新速度越快
+        if self.ticks >= (self.frame_rate - (self.level * self.factor)):
+            self.ticks = 0
+            return True
+        return False
+
+    def keyboard_handler(self, motion):
+        self.board.move_piece(motion)
+
+    def on_lines(self, num_lines):
+        self.score += (num_lines * self.level)
+        self.lines += num_lines
+        if self.lines / 10 > self.level:
+            self.level = self.lines / 10
+
+    def on_game_over(self):
+        self.reset()
+
+    def cycle(self):
+        if self.should_update():
+            self.board.move_down()
+            # self.update_caption()
+
+    def toggle_pause(self):
+        self.is_paused = not self.is_paused
+
+    # def update_caption(self):
+    #     self.window_ref.set_caption('Tetris - %s lines [%s]' % (self.lines, self.score))
+
+    # 我自定义的方法
+    def draw(self):
+        self.board.draw_game_board()
+
 
 def terminate():
     pygame.quit()
@@ -117,11 +343,8 @@ def drawShape(SURFACE, shape):
     for i in range(len(shape.shape)):
         for j in range(len(shape.shape[i])):
             if shape.shape[i][j]==1:
-                rect = pygame.Rect((shape.x+i)*BOX_SIZE,(shape.y+j)*BOX_SIZE,BOX_SIZE,BOX_SIZE)
+                rect = pygame.Rect((shape.x+i)*BLOCK_SIZE,(shape.y+j)*BLOCK_SIZE,BLOCK_SIZE,BLOCK_SIZE)
                 pygame.draw.rect(SURFACE,RED,rect)
-
-
-
 
 pygame.init()
 SURFACE = pygame.display.set_mode((WINDOW_WIDTH,WINDOW_HEIGHT))
@@ -129,20 +352,36 @@ pygame.display.set_caption("俄罗斯方块")
 
 fpsClock = pygame.time.Clock()
 
-shape = Shape(5,0)
+board = Board(WIDTH,HEIGHT,None)
+game = Game(SURFACE, board, 1)
+
+key_dir = None
+frameCount = 0
+last = None
 
 while True:
+    frameCount += 1
     for event in pygame.event.get():
+        key_dir = None
         if event.type == QUIT:
             terminate()
+        if event.type == KEYDOWN:
+            key_dir = event.key
+            if key_dir == K_UP:
+                board.move_piece(K_UP)
+
+    if key_dir in [K_LEFT,K_RIGHT,K_DOWN] and frameCount > 4:
+        frameCount = 0
+        board.move_piece(key_dir)
 
     SURFACE.fill(WHITE)
 
-    drawShape(SURFACE,shape)
+    game.draw()
+
+    # 每隔一定帧数下降一格
+    if game.should_update():
+        board.move_down()
+
     pygame.display.update()
-
-    time.sleep(3)
-
-    shape.rotate()
 
     fpsClock.tick(FPS)
