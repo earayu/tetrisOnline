@@ -327,9 +327,6 @@ class Game(object):
     def toggle_pause(self):
         self.is_paused = not self.is_paused
 
-    # def update_caption(self):
-    #     self.window_ref.set_caption('Tetris - %s lines [%s]' % (self.lines, self.score))
-
     # 我自定义的方法
     def draw(self):
         self.board.draw_game_board()
