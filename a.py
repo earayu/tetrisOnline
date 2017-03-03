@@ -1,6 +1,8 @@
+import socketserver
 import pygame, sys, random, time
 from pygame.locals import *
 
+HOST, PORT = "localhost", 9999
 
 # 游戏基本设置
 WIDTH = 16
@@ -19,6 +21,8 @@ FPS = 60
 # 颜色
 WHITE = (255,255,255)
 RED = (255,0,0)
+
+
 
 
 class Shape(object):
@@ -313,10 +317,7 @@ class Game(object):
     # def toggle_pause(self):
     #     self.is_paused = not self.is_paused
 
-    # 我自定义的方法
-    def draw(self,x,y):
-        BSURFACE = self.board.draw_game_board()
-        SURFACE.blit(BSURFACE,(x,y))
+
 
 
 def terminate():
@@ -330,50 +331,53 @@ def terminate():
 #                 rect = pygame.Rect((shape.x+i)*BLOCK_SIZE,(shape.y+j)*BLOCK_SIZE,BLOCK_SIZE,BLOCK_SIZE)
 #                 pygame.draw.rect(SURFACE,RED,rect)
 
-pygame.init()
-SURFACE = pygame.display.set_mode((WINDOW_WIDTH*2+50,WINDOW_HEIGHT))
-SURFACE.fill(WHITE)
-pygame.display.set_caption("俄罗斯方块")
-fpsClock = pygame.time.Clock()
 
-board = Board(WIDTH,HEIGHT,None)
-game = Game(SURFACE, board, 1)
+# class MyTCPHandler(socketserver.BaseRequestHandler):
+#
+#     board = Board(16, 28, None)
+#
+#     def handle(self):
+#         self.data = self.request.recv(1024).strip()
+#         key = str(self.data, 'utf-8')
+#         print(key)
+#         if key == 'UP':
+#             self.board.move_piece(key)
+#             import json
+#             # print(json.dumps(self.board.board))
+#             self.request.send(bytes(str(json.dumps(self.board.board)), 'utf-8'))
+#
+#
+# # Create the server, binding to localhost on port 9999
+# server = socketserver.TCPServer((HOST, PORT), MyTCPHandler)
+# server.serve_forever()
 
-board2 = Board(WIDTH,HEIGHT,None)
-game2 = Game(SURFACE, board2, 1)
+board = Board(16, 28, None)
+
+import socket
+with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+    s.bind((HOST, PORT))
+    s.listen(1)
+    conn, addr = s.accept()
+    with conn:
+        print('Connected by', addr)
+        while True:
+            data = conn.recv(1024)
+            key = str(data, 'utf-8')
+            print(key)
+            if key == 'UP':
+                board.move_piece(key)
+                import json
+                # print(json.dumps(self.board.board))
+                conn.sendall(bytes(str(json.dumps(board.board)), 'utf-8'))
 
 
 
-key_dir = None
-frameCount = 0
-
-while True:
-    frameCount += 1
-    for event in pygame.event.get():
-        key_dir = None
-        if event.type == QUIT:
-            terminate()
-        if event.type == KEYDOWN:
-            key_dir = event.key
-            if key_dir == K_UP:
-                board.move_piece(K_UP)
-
-    if key_dir in [K_LEFT,K_RIGHT,K_DOWN] and frameCount > 4:
-        frameCount = 0
-        board.move_piece(key_dir)
 
 
 
-    game.draw(0,0)
-    game2.draw(280,0)
 
 
-    # 每隔一定帧数下降一格
-    if game.should_update():
-        board.move_down()
-        board2.move_down()
 
-    # 渲染一帧
-    pygame.display.update()
 
-    fpsClock.tick(FPS)
+
+
