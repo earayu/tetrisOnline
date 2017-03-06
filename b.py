@@ -295,26 +295,6 @@ class Game(object):
             return True
         return False
 
-    # def keyboard_handler(self, motion):
-    #     self.board.move_piece(motion)
-
-    # def on_lines(self, num_lines):
-    #     self.score += (num_lines * self.level)
-    #     self.lines += num_lines
-    #     if self.lines / 10 > self.level:
-    #         self.level = self.lines / 10
-
-    # def on_game_over(self):
-    #     self.reset()
-
-    # def cycle(self):
-    #     if self.should_update():
-    #         self.board.move_down()
-    #         # self.update_caption()
-
-    # def toggle_pause(self):
-    #     self.is_paused = not self.is_paused
-
     # 我自定义的方法
     def draw(self,x,y):
         BSURFACE = self.board.draw_game_board()
@@ -328,18 +308,23 @@ def terminate():
 
 HOST, PORT = "localhost", 9999
 
+show_str = """{
+	"game_id":"0",
+	"player_id":"0",
+	"opr":""
+}"""
 
 bb = Board(16,28,None)
 dd = {}
 dd["board"] = bb.board
 dd["active_shape"] = bb.active_shape
 
+
 def get_board(sock):
-    sock.sendall(bytes('{"opr":"show"}', 'utf-8'))
-    raw_recv_data = sock.recv(10240)
+    sock.sendall(bytes(show_str, 'utf-8'))
+    raw_recv_data = sock.recv(40240)
     print(raw_recv_data)
     recv_data = json.loads(str(raw_recv_data, 'utf-8'))
-    print(recv_data)
     board.board = recv_data["board"]
     board.active_shape.shape = recv_data["active_shape"]
     # board.pending_shape.shape = recv_data["pending_shape"]
@@ -373,7 +358,6 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
             if event.type == QUIT:
                 terminate()
 
-
             pressed_keys = pygame.key.get_pressed()
 
             if event.type == KEYDOWN:
@@ -394,7 +378,6 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
                 key_dir = K_DOWN
             if pressed_keys[K_s]:
                 key_dir2 = K_s
-
 
         if key_dir in [K_LEFT,K_RIGHT,K_DOWN] and frameCount > 4:
             frameCount = 0

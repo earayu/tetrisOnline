@@ -259,15 +259,19 @@ class Player():
     board = None
     score = 0
 
+    def __init__(self, player_id, conn, board):
+        self.player_id = player_id
+        self.conn = conn
+        self.board = board
+
 
 
 class Game(object):
-
     game_id = 0
     # TODO 这些都要N个，支持N人同一局游戏
-    conn = None
-    board = None
-
+    # conn = None
+    # board = None
+    player = {}
 
 
     ticks = 0
@@ -277,16 +281,9 @@ class Game(object):
     starting_level = 1
     level = 1
 
-
-
-    def __init__(self, board, conn, starting_level=1):
-        self.board = board
-        self.conn = conn
+    def __init__(self, starting_level=1):
         self.starting_level = int(starting_level)
         self.reset()
-
-    def register_callbacks(self):
-        self.board.push_handlers(self)
 
     def reset(self):
         self.level = self.starting_level
@@ -302,55 +299,81 @@ class Game(object):
             return True
         return False
 
+    # 添加一个玩家进入这局游戏
+    def add_player(self, conn):
+        # TODO 暂时把socket fd当作player_id, Board最后也要改掉
+        player_id = conn.fileno()
+        self.player[player_id] = Player(player_id, conn, Board(16,28))
+
+
+    # 将游戏状态发送给同一局游戏中的所有玩家
+    def show(self):
+        dd = []
+        # 遍历map
+        for p in self.player.values():
+            dd.append(
+                {
+                    "player_id":p.player_id,
+                    "board": p.board.board,
+                    "active_shape": p.board.active_shape.shape,
+                    "x": p.board.active_shape.x,
+                    "y": p.board.active_shape.y
+                }
+            )
+
+        data = json.dumps(dd).encode('utf-8')
+
+        for p in self.player.values():
+            p.conn.send(data)
+
+    # 响应相应玩家的操作
+    def up(self, player_id):
+        self.player.get(player_id).board.move_piece(K_UP)
+
+    def left(self, player_id):
+        self.player.get(player_id).board.move_piece(K_LEFT)
+
+    def right(self, player_id):
+        self.player.get(player_id).board.move_piece(K_RIGHT)
+
+    def down(self, player_id):
+        self.player.get(player_id).board.move_piece(K_DOWN)
+
+
 def accept(s, mask):
     conn,addr = s.accept()
     conn.setblocking(False)
     selector.register(conn, selectors.EVENT_READ, read)
 
-    game = Game(Board(16,28), conn, 1)
-    games[conn.fileno()] = game
+    game = Game(1)
+    game.add_player(conn)
+    games[game.game_id] = game # TODO 先只用game_id为0的Game对象
+
 
 def read(conn, mask):
-    board = games[conn.fileno()].board
-    # 闭包
-    def show():
-        dd = {"board": board.board,
-              "active_shape": board.active_shape.shape,
-              "x": board.active_shape.x,
-              "y": board.active_shape.y}
-        # dd["pending_shape"] = board.pending_shape.shape
-        # print(dd)
-        conn.send(json.dumps(dd).encode('utf-8'))
-    def up():
-        board.move_piece(K_UP)
-    def left():
-        board.move_piece(K_LEFT)
-    def right():
-        board.move_piece(K_RIGHT)
-    def down():
-        board.move_piece(K_DOWN)
-
     raw_request_jsons = conn.recv(1024).decode("utf-8")
-    print(raw_request_jsons)
     request_jsons = re.findall(r'\{.*?\}', raw_request_jsons) #TODO 很奇怪，要改成一次只发送1个json吗
+
     for j in request_jsons:
         js = json.loads(j)
-        if js["opr"] == "show":
-            show()
-        if js["opr"] == "up":
-            up()
-        if js["opr"] == "left":
-            left()
-        if js["opr"] == "right":
-            right()
-        if js["opr"] == "down":
-            down()
 
+        game = games[js["game_id"]]
+        player_id = game.get_player(js["player"])
+        if js["opr"] == "show":
+            game.show()
+        if js["opr"] == "up":
+            game.up(player_id)
+        if js["opr"] == "left":
+            game.left(player_id)
+        if js["opr"] == "right":
+            game.right(player_id)
+        if js["opr"] == "down":
+            game.down(player_id)
 
 
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 s.bind((HOST, PORT))
-s.listen(1)
+s.listen(10)
 
 selector = selectors.DefaultSelector()
 selector.register(s, selectors.EVENT_READ, accept)
