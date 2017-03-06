@@ -391,10 +391,28 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
             key_dir = None
             if event.type == QUIT:
                 terminate()
+
+
+            pressed_keys = pygame.key.get_pressed()
+
             if event.type == KEYDOWN:
-                key_dir = event.key
-                if key_dir == K_UP:
+                if event.key == K_UP:
                     sock.sendall(bytes('{"opr":"up"}', 'utf-8'))
+                if event.key == K_w:
+                    board2.move_piece(K_UP)
+
+            if pressed_keys[K_LEFT]:
+                key_dir = K_LEFT
+            if pressed_keys[K_a]:
+                key_dir2 = K_a
+            if pressed_keys[K_RIGHT]:
+                key_dir = K_RIGHT
+            if pressed_keys[K_d]:
+                key_dir2 = K_d
+            if pressed_keys[K_DOWN]:
+                key_dir = K_DOWN
+            if pressed_keys[K_s]:
+                key_dir2 = K_s
 
 
         if key_dir in [K_LEFT,K_RIGHT,K_DOWN] and frameCount > 4:
