@@ -1,6 +1,9 @@
 import socketserver
-import pygame, sys, random, time
+import pygame, sys, random, time, re
 from pygame.locals import *
+import json
+import socket
+import selectors
 
 HOST, PORT = "localhost", 9999
 
@@ -15,7 +18,7 @@ WINDOW_HEIGHT = HEIGHT*BLOCK_SIZE
 
 FPS = 60
 
-
+SPEED = [1,0.8,0.6,0.4,0.3,0.2,0.1]
 
 
 # 颜色
@@ -150,6 +153,7 @@ class Board():
 
     def move_down(self):
         self.active_shape.y += 1
+        print(self.active_shape.y)
 
         if self.check_bottom() or self.is_collision():
             self.active_shape.y -= 1
@@ -297,81 +301,70 @@ class Game(object):
             return True
         return False
 
-    # def keyboard_handler(self, motion):
-    #     self.board.move_piece(motion)
-
-    # def on_lines(self, num_lines):
-    #     self.score += (num_lines * self.level)
-    #     self.lines += num_lines
-    #     if self.lines / 10 > self.level:
-    #         self.level = self.lines / 10
-
-    # def on_game_over(self):
-    #     self.reset()
-
-    # def cycle(self):
-    #     if self.should_update():
-    #         self.board.move_down()
-    #         # self.update_caption()
-
-    # def toggle_pause(self):
-    #     self.is_paused = not self.is_paused
-
-
-
-
 def terminate():
     pygame.quit()
     sys.exit()
 
-# def drawShape(SURFACE, shape):
-#     for i in range(len(shape.shape)):
-#         for j in range(len(shape.shape[i])):
-#             if shape.shape[i][j]==1:
-#                 rect = pygame.Rect((shape.x+i)*BLOCK_SIZE,(shape.y+j)*BLOCK_SIZE,BLOCK_SIZE,BLOCK_SIZE)
-#                 pygame.draw.rect(SURFACE,RED,rect)
+def get_board():
+    pass
 
-
-# class MyTCPHandler(socketserver.BaseRequestHandler):
-#
-#     board = Board(16, 28, None)
-#
-#     def handle(self):
-#         self.data = self.request.recv(1024).strip()
-#         key = str(self.data, 'utf-8')
-#         print(key)
-#         if key == 'UP':
-#             self.board.move_piece(key)
-#             import json
-#             # print(json.dumps(self.board.board))
-#             self.request.send(bytes(str(json.dumps(self.board.board)), 'utf-8'))
-#
-#
-# # Create the server, binding to localhost on port 9999
-# server = socketserver.TCPServer((HOST, PORT), MyTCPHandler)
-# server.serve_forever()
 
 board = Board(16, 28, None)
 
-import socket
-with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-    s.bind((HOST, PORT))
-    s.listen(1)
-    conn, addr = s.accept()
-    with conn:
-        print('Connected by', addr)
-        while True:
-            data = conn.recv(1024)
-            key = str(data, 'utf-8')
-            print(key)
-            if key == 'UP':
-                board.move_piece(key)
-                import json
-                # print(json.dumps(self.board.board))
-                conn.sendall(bytes(str(json.dumps(board.board)), 'utf-8'))
+
+s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+s.bind((HOST, PORT))
+s.listen(1)
+conn, addr = s.accept()
+conn.setblocking(False)
+
+# 处理局部变量
+def read(conn, mask):
+    raw_request_jsons = conn.recv(1024).decode("utf-8")
+    print(raw_request_jsons)
+    request_jsons = re.findall(r'\{.*?\}', raw_request_jsons)
+    for j in request_jsons:
+        js = json.loads(j)
+        if js["opr"] == "show":
+            show(conn)
+        if js["opr"] == "up":
+            up()
+
+def show(conn):
+    dd = {}
+    dd["board"] = board.board
+    dd["active_shape"] = board.active_shape.shape
+    # dd["pending_shape"] = board.pending_shape.shape
+    dd["x"] = board.active_shape.x
+    dd["y"] = board.active_shape.y
+    # print(dd)
+    conn.send(json.dumps(dd).encode('utf-8'))
+
+def up():
+    board.move_piece(K_UP)
 
 
 
+selector = selectors.DefaultSelector()
+selector.register(conn, selectors.EVENT_READ, read)
+
+
+pygame.init()
+SURFACE = pygame.display.set_mode((WINDOW_WIDTH * 2 + 50, WINDOW_HEIGHT))
+SURFACE.fill(WHITE)
+pygame.display.set_caption("俄罗斯方块")
+fpsClock = pygame.time.Clock()
+
+game = Game(SURFACE, board, 1)
+
+while True:
+    events = selector.select(SPEED[4])
+    for key, mask in events:
+        callback = key.data  # 掉accept函数
+        callback(key.fileobj, mask)  # key.fileobj = 文件句柄 （相当于上个例子中检测的自己）
+
+    if game.should_update():
+        board.move_down()
 
 
 

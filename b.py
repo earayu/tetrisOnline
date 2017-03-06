@@ -335,12 +335,25 @@ HOST, PORT = "localhost", 9999
 data = 'aaa'
 
 import json
+
 bb = Board(16,28,None)
 dd = {}
 dd["board"] = bb.board
 dd["active_shape"] = bb.active_shape
 
-print(dd)
+def get_board(sock):
+    sock.sendall(bytes('{"opr":"show"}', 'utf-8'))
+    raw_recv_data = sock.recv(10240)
+    print(raw_recv_data)
+    recv_data = json.loads(str(raw_recv_data, 'utf-8'))
+    print(recv_data)
+    board.board = recv_data["board"]
+    board.active_shape.shape = recv_data["active_shape"]
+    # board.pending_shape.shape = recv_data["pending_shape"]
+    board.active_shape.x = recv_data["x"]
+    board.active_shape.y = recv_data["y"]
+
+# print(dd)
 
 # Create a socket (SOCK_STREAM means a TCP socket)
 with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
@@ -372,6 +385,7 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
     frameCount = 0
 
     while True:
+        get_board(sock)
         frameCount += 1
         for event in pygame.event.get():
             key_dir = None
@@ -380,12 +394,7 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
             if event.type == KEYDOWN:
                 key_dir = event.key
                 if key_dir == K_UP:
-                    # board.move_piece(K_UP)
-                    sock.send(bytes('UP','utf-8'))
-                    import json
-                    recv_data = json.loads(str(sock.recv(2048), 'utf-8'))
-                    print(type(recv_data))
-                    board.board = recv_data
+                    sock.sendall(bytes('{"opr":"up"}', 'utf-8'))
 
 
         if key_dir in [K_LEFT,K_RIGHT,K_DOWN] and frameCount > 4:
@@ -398,10 +407,7 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
         game2.draw(280,0)
 
 
-        # 每隔一定帧数下降一格
-        if game.should_update():
-            board.move_down()
-            board2.move_down()
+
 
         # 渲染一帧
         pygame.display.update()
