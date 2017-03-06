@@ -21,12 +21,6 @@ FPS = 60
 SPEED = [1,0.8,0.6,0.4,0.3,0.2,0.1]
 
 
-# 颜色
-WHITE = (255,255,255)
-RED = (255,0,0)
-
-
-
 
 class Shape(object):
     _shapes = [
@@ -94,9 +88,8 @@ class Board():
     pending_shape = None
     board = None
 
-    def __init__(self, width, height, block):
+    def __init__(self, width, height):
         self.width, self.height = width, height
-        self.block = block
         self.calculated_height = self.height * BLOCK_SIZE
         self.calculated_width = self.width * BLOCK_SIZE
         self.reset()
@@ -260,26 +253,36 @@ class Board():
 
         return bsurface
 
+class Player():
+    player_id = 0
+    conn = None
+    board = None
+    score = 0
 
-    def draw_block(self, surface, x, y):
-        y += 1  # since calculated_height does not account for 0-based index
-        # self.block.blit(x * WINDOW_WIDTH, self.calculated_height - y * WINDOW_HEIGHT)
-        rect = pygame.Rect(x * BLOCK_SIZE, y * BLOCK_SIZE, BLOCK_SIZE,BLOCK_SIZE)
-        pygame.draw.rect(surface,RED,rect)
 
 
 class Game(object):
+
+    game_id = 0
+    # TODO 这些都要N个，支持N人同一局游戏
+    conn = None
+    board = None
+
+
+
     ticks = 0
     factor = 4
     frame_rate = 60.0
-
     is_paused = False
+    starting_level = 1
+    level = 1
 
-    def __init__(self, window_ref, board, starting_level=1):
-        self.window_ref = window_ref
+
+
+    def __init__(self, board, conn, starting_level=1):
         self.board = board
+        self.conn = conn
         self.starting_level = int(starting_level)
-        # self.register_callbacks()
         self.reset()
 
     def register_callbacks(self):
@@ -287,8 +290,6 @@ class Game(object):
 
     def reset(self):
         self.level = self.starting_level
-        self.lines = 0
-        self.score = 0
 
     def should_update(self):
         if self.is_paused:
@@ -301,61 +302,60 @@ class Game(object):
             return True
         return False
 
-def terminate():
-    pygame.quit()
-    sys.exit()
+def accept(s, mask):
+    conn,addr = s.accept()
+    conn.setblocking(False)
+    selector.register(conn, selectors.EVENT_READ, read)
 
-def get_board():
-    pass
+    game = Game(Board(16,28), conn, 1)
+    games[conn.fileno()] = game
 
+def read(conn, mask):
+    board = games[conn.fileno()].board
+    # 闭包
+    def show():
+        dd = {"board": board.board,
+              "active_shape": board.active_shape.shape,
+              "x": board.active_shape.x,
+              "y": board.active_shape.y}
+        # dd["pending_shape"] = board.pending_shape.shape
+        # print(dd)
+        conn.send(json.dumps(dd).encode('utf-8'))
+    def up():
+        board.move_piece(K_UP)
+    def left():
+        board.move_piece(K_LEFT)
+    def right():
+        board.move_piece(K_RIGHT)
+    def down():
+        board.move_piece(K_DOWN)
 
-board = Board(16, 28, None)
+    raw_request_jsons = conn.recv(1024).decode("utf-8")
+    print(raw_request_jsons)
+    request_jsons = re.findall(r'\{.*?\}', raw_request_jsons) #TODO 很奇怪，要改成一次只发送1个json吗
+    for j in request_jsons:
+        js = json.loads(j)
+        if js["opr"] == "show":
+            show()
+        if js["opr"] == "up":
+            up()
+        if js["opr"] == "left":
+            left()
+        if js["opr"] == "right":
+            right()
+        if js["opr"] == "down":
+            down()
+
 
 
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 s.bind((HOST, PORT))
 s.listen(1)
-conn, addr = s.accept()
-conn.setblocking(False)
-
-# 处理局部变量
-def read(conn, mask):
-    raw_request_jsons = conn.recv(1024).decode("utf-8")
-    print(raw_request_jsons)
-    request_jsons = re.findall(r'\{.*?\}', raw_request_jsons)
-    for j in request_jsons:
-        js = json.loads(j)
-        if js["opr"] == "show":
-            show(conn)
-        if js["opr"] == "up":
-            up()
-
-def show(conn):
-    dd = {}
-    dd["board"] = board.board
-    dd["active_shape"] = board.active_shape.shape
-    # dd["pending_shape"] = board.pending_shape.shape
-    dd["x"] = board.active_shape.x
-    dd["y"] = board.active_shape.y
-    # print(dd)
-    conn.send(json.dumps(dd).encode('utf-8'))
-
-def up():
-    board.move_piece(K_UP)
-
-
 
 selector = selectors.DefaultSelector()
-selector.register(conn, selectors.EVENT_READ, read)
+selector.register(s, selectors.EVENT_READ, accept)
 
-
-pygame.init()
-SURFACE = pygame.display.set_mode((WINDOW_WIDTH * 2 + 50, WINDOW_HEIGHT))
-SURFACE.fill(WHITE)
-pygame.display.set_caption("俄罗斯方块")
-fpsClock = pygame.time.Clock()
-
-game = Game(SURFACE, board, 1)
+games = {}
 
 while True:
     events = selector.select(SPEED[4])
@@ -363,8 +363,10 @@ while True:
         callback = key.data  # 掉accept函数
         callback(key.fileobj, mask)  # key.fileobj = 文件句柄 （相当于上个例子中检测的自己）
 
-    if game.should_update():
-        board.move_down()
+        for fd in games:
+            game = games[fd]
+            if game.should_update():
+                game.board.move_down()
 
 
 

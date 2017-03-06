@@ -24,12 +24,14 @@ sock = socket.socket()
 sock.bind(('localhost', 9000))
 sock.listen(100)
 sock.setblocking(False)
-sel.register(sock, selectors.EVENT_READ, accept)  # 注册事件
-#      sock注册过来                   新连接调用这个函数
+
+conn = None
 
 while True:
-    events = sel.select()  # 有可能调用epoll，也有可能调用select，看系统支持
-    # 默认是阻塞，有活动连接，就返回活动的列表
-    for key, mask in events:
-        callback = key.data  # 掉accept函数
-        callback(key.fileobj, mask)  # key.fileobj = 文件句柄 （相当于上个例子中检测的自己）
+    try:
+        conn = sock.accept()
+        print(conn)
+    except:
+        pass
+
+# data = conn.recv(1024)

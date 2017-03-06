@@ -1,6 +1,7 @@
 import socket
 import pygame, sys, random, time
 from pygame.locals import *
+import json
 
 
 # 游戏基本设置
@@ -324,17 +325,9 @@ def terminate():
     pygame.quit()
     sys.exit()
 
-# def drawShape(SURFACE, shape):
-#     for i in range(len(shape.shape)):
-#         for j in range(len(shape.shape[i])):
-#             if shape.shape[i][j]==1:
-#                 rect = pygame.Rect((shape.x+i)*BLOCK_SIZE,(shape.y+j)*BLOCK_SIZE,BLOCK_SIZE,BLOCK_SIZE)
-#                 pygame.draw.rect(SURFACE,RED,rect)
 
 HOST, PORT = "localhost", 9999
-data = 'aaa'
 
-import json
 
 bb = Board(16,28,None)
 dd = {}
@@ -353,19 +346,9 @@ def get_board(sock):
     board.active_shape.x = recv_data["x"]
     board.active_shape.y = recv_data["y"]
 
-# print(dd)
 
-# Create a socket (SOCK_STREAM means a TCP socket)
 with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
-    # Connect to server and send data
     sock.connect((HOST, PORT))
-    # sock.sendall(bytes(data + "\n", "utf-8"))
-    #
-    # # Receive data from the server and shut down
-    # received = str(sock.recv(1024), "utf-8")
-
-    # print("Sent:     {}".format(data))
-    # print("Received: {}".format(received))
 
     pygame.init()
     SURFACE = pygame.display.set_mode((WINDOW_WIDTH*2+50,WINDOW_HEIGHT))
@@ -378,8 +361,6 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
 
     board2 = Board(WIDTH,HEIGHT,None)
     game2 = Game(SURFACE, board2, 1)
-
-
 
     key_dir = None
     frameCount = 0
@@ -417,14 +398,17 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
 
         if key_dir in [K_LEFT,K_RIGHT,K_DOWN] and frameCount > 4:
             frameCount = 0
-            board.move_piece(key_dir)
-
+            # board.move_piece(key_dir)
+            if key_dir == K_LEFT:
+                sock.sendall(bytes('{"opr":"left"}', 'utf-8'))
+            if key_dir == K_RIGHT:
+                sock.sendall(bytes('{"opr":"right"}', 'utf-8'))
+            if key_dir == K_DOWN:
+                sock.sendall(bytes('{"opr":"down"}', 'utf-8'))
 
 
         game.draw(0,0)
         game2.draw(280,0)
-
-
 
 
         # 渲染一帧
