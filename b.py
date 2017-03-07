@@ -311,7 +311,31 @@ HOST, PORT = "localhost", 9999
 show_str = """{
 	"game_id":"0",
 	"player_id":"0",
-	"opr":""
+	"opr":"show"
+}"""
+
+up_str = """{
+	"game_id":"0",
+	"player_id":"0",
+	"opr":"up"
+}"""
+
+left_str = """{
+	"game_id":"0",
+	"player_id":"0",
+	"opr":"left"
+}"""
+
+down_str = """{
+	"game_id":"0",
+	"player_id":"0",
+	"opr":"down"
+}"""
+
+right_str = """{
+	"game_id":"0",
+	"player_id":"0",
+	"opr":"right"
 }"""
 
 bb = Board(16,28,None)
@@ -324,7 +348,7 @@ def get_board(sock):
     sock.sendall(bytes(show_str, 'utf-8'))
     raw_recv_data = sock.recv(40240)
     print(raw_recv_data)
-    recv_data = json.loads(str(raw_recv_data, 'utf-8'))
+    recv_data = json.loads(str(raw_recv_data, 'utf-8'))[0]
     board.board = recv_data["board"]
     board.active_shape.shape = recv_data["active_shape"]
     # board.pending_shape.shape = recv_data["pending_shape"]
@@ -362,7 +386,7 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
 
             if event.type == KEYDOWN:
                 if event.key == K_UP:
-                    sock.sendall(bytes('{"opr":"up"}', 'utf-8'))
+                    sock.sendall(bytes(up_str, 'utf-8'))
                 if event.key == K_w:
                     board2.move_piece(K_UP)
 
@@ -383,11 +407,11 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
             frameCount = 0
             # board.move_piece(key_dir)
             if key_dir == K_LEFT:
-                sock.sendall(bytes('{"opr":"left"}', 'utf-8'))
+                sock.sendall(bytes(left_str, 'utf-8'))
             if key_dir == K_RIGHT:
-                sock.sendall(bytes('{"opr":"right"}', 'utf-8'))
+                sock.sendall(bytes(right_str, 'utf-8'))
             if key_dir == K_DOWN:
-                sock.sendall(bytes('{"opr":"down"}', 'utf-8'))
+                sock.sendall(bytes(down_str, 'utf-8'))
 
 
         game.draw(0,0)

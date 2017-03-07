@@ -302,9 +302,11 @@ class Game(object):
     # 添加一个玩家进入这局游戏
     def add_player(self, conn):
         # TODO 暂时把socket fd当作player_id, Board最后也要改掉
-        player_id = conn.fileno()
-        self.player[player_id] = Player(player_id, conn, Board(16,28))
+        # player_id = conn.fileno()
+        self.player[0] = Player(0, conn, Board(16,28))
 
+    def get_player(self, player_id):
+        return self.player[player_id]
 
     # 将游戏状态发送给同一局游戏中的所有玩家
     def show(self):
@@ -322,7 +324,6 @@ class Game(object):
             )
 
         data = json.dumps(dd).encode('utf-8')
-
         for p in self.player.values():
             p.conn.send(data)
 
@@ -352,13 +353,13 @@ def accept(s, mask):
 
 def read(conn, mask):
     raw_request_jsons = conn.recv(1024).decode("utf-8")
-    request_jsons = re.findall(r'\{.*?\}', raw_request_jsons) #TODO 很奇怪，要改成一次只发送1个json吗
-
+    print(raw_request_jsons)
+    request_jsons = split_json(raw_request_jsons) #re.findall(r'\{.*?\}', raw_request_jsons) #TODO 很奇怪，要改成一次只发送1个json吗
     for j in request_jsons:
         js = json.loads(j)
 
-        game = games[js["game_id"]]
-        player_id = game.get_player(js["player"])
+        game = games[int(js["game_id"])]
+        player_id = int(js["player_id"])
         if js["opr"] == "show":
             game.show()
         if js["opr"] == "up":
@@ -369,6 +370,14 @@ def read(conn, mask):
             game.right(player_id)
         if js["opr"] == "down":
             game.down(player_id)
+
+#TODO 垃圾实现
+def split_json(str):
+    l = []
+    for e in str.split("}"):
+        if e.startswith("{"):
+            l.append(e+"}")
+    return l
 
 
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -389,7 +398,9 @@ while True:
         for fd in games:
             game = games[fd]
             if game.should_update():
-                game.board.move_down()
+                for pid in game.player:
+                    p = game.player[pid]
+                    p.board.move_down()
 
 
 
