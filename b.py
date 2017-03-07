@@ -335,15 +335,19 @@ dd["active_shape"] = bb.active_shape
 
 def get_board(sock):
     sock.sendall(bytes(show_str(player_id), 'utf-8'))
-    raw_recv_data = sock.recv(40240)
-    print(raw_recv_data)
+    # print(sock.recv(40240).decode('utf-8'), file=sys.stderr)
+    raw = sock.recv(40240)
+    print(raw)
+    raw_recv_data = json.loads(raw.decode('utf-8'))
     # TODO 多人游戏，要按照player_id分离json
-    recv_data = json.loads(str(raw_recv_data, 'utf-8'))[0]
-    board.board = recv_data["board"]
-    board.active_shape.shape = recv_data["active_shape"]
-    # board.pending_shape.shape = recv_data["pending_shape"]
-    board.active_shape.x = recv_data["x"]
-    board.active_shape.y = recv_data["y"]
+    for j in raw_recv_data:
+        if j["player_id"] == player_id:
+            recv_data = j
+            board.board = recv_data["board"]
+            board.active_shape.shape = recv_data["active_shape"]
+            # board.pending_shape.shape = recv_data["pending_shape"]
+            board.active_shape.x = recv_data["x"]
+            board.active_shape.y = recv_data["y"]
 
 
 
