@@ -307,36 +307,25 @@ def terminate():
 
 
 HOST, PORT = "localhost", 9999
+game_id = 0
+player_id = 0
 
-show_str = """{
-	"game_id":"0",
-	"player_id":"0",
-	"opr":"show"
-}"""
+#TODO player_id参数可以去掉
+def show_str(player_id):
+    return '{"game_id":"' + str(game_id) + '","player_id":"' + str(player_id) + '","opr":"show"}'
 
-up_str = """{
-	"game_id":"0",
-	"player_id":"0",
-	"opr":"up"
-}"""
+def up_str(player_id):
+    return '{"game_id":"' + str(game_id) + '","player_id":"' + str(player_id) + '","opr":"up"}'
 
-left_str = """{
-	"game_id":"0",
-	"player_id":"0",
-	"opr":"left"
-}"""
+def left_str(player_id):
+    return '{"game_id":"' + str(game_id) + '","player_id":"' + str(player_id) + '","opr":"left"}'
 
-down_str = """{
-	"game_id":"0",
-	"player_id":"0",
-	"opr":"down"
-}"""
+def down_str(player_id):
+    return '{"game_id":"' + str(game_id) + '","player_id":"' + str(player_id) + '","opr":"down"}'
 
-right_str = """{
-	"game_id":"0",
-	"player_id":"0",
-	"opr":"right"
-}"""
+def right_str(player_id):
+    return '{"game_id":"' + str(game_id) + '","player_id":"' + str(player_id) + '","opr":"right"}'
+
 
 bb = Board(16,28,None)
 dd = {}
@@ -345,9 +334,10 @@ dd["active_shape"] = bb.active_shape
 
 
 def get_board(sock):
-    sock.sendall(bytes(show_str, 'utf-8'))
+    sock.sendall(bytes(show_str(player_id), 'utf-8'))
     raw_recv_data = sock.recv(40240)
     print(raw_recv_data)
+    # TODO 多人游戏，要按照player_id分离json
     recv_data = json.loads(str(raw_recv_data, 'utf-8'))[0]
     board.board = recv_data["board"]
     board.active_shape.shape = recv_data["active_shape"]
@@ -356,8 +346,14 @@ def get_board(sock):
     board.active_shape.y = recv_data["y"]
 
 
+
+
 with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
     sock.connect((HOST, PORT))
+    # sock.sendall('{"opr":"info"}'.encode('utf-8'))
+    game_info_json = json.loads(sock.recv(1024).decode('utf-8'))
+    game_id = game_info_json["game_id"]
+    player_id = int(game_info_json["player_id"])
 
     pygame.init()
     SURFACE = pygame.display.set_mode((WINDOW_WIDTH*2+50,WINDOW_HEIGHT))
@@ -386,7 +382,7 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
 
             if event.type == KEYDOWN:
                 if event.key == K_UP:
-                    sock.sendall(bytes(up_str, 'utf-8'))
+                    sock.sendall(bytes(up_str(player_id), 'utf-8'))
                 if event.key == K_w:
                     board2.move_piece(K_UP)
 
@@ -407,11 +403,11 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
             frameCount = 0
             # board.move_piece(key_dir)
             if key_dir == K_LEFT:
-                sock.sendall(bytes(left_str, 'utf-8'))
+                sock.sendall(bytes(left_str(player_id), 'utf-8'))
             if key_dir == K_RIGHT:
-                sock.sendall(bytes(right_str, 'utf-8'))
+                sock.sendall(bytes(right_str(player_id), 'utf-8'))
             if key_dir == K_DOWN:
-                sock.sendall(bytes(down_str, 'utf-8'))
+                sock.sendall(bytes(down_str(player_id), 'utf-8'))
 
 
         game.draw(0,0)

@@ -21,7 +21,6 @@ FPS = 60
 SPEED = [1,0.8,0.6,0.4,0.3,0.2,0.1]
 
 
-
 class Shape(object):
     _shapes = [
         [[0, 1, 0, 0], [0, 1, 0, 0], [0, 1, 0, 0], [0, 1, 0, 0]],
@@ -265,7 +264,6 @@ class Player():
         self.board = board
 
 
-
 class Game(object):
     game_id = 0
     # TODO 这些都要N个，支持N人同一局游戏
@@ -282,6 +280,7 @@ class Game(object):
     level = 1
 
     def __init__(self, starting_level=1):
+        self.game_id = len(games)+1
         self.starting_level = int(starting_level)
         self.reset()
 
@@ -299,11 +298,19 @@ class Game(object):
             return True
         return False
 
+    def send_info(self, conn):
+        p = self.get_player(conn.fileno()) #TODO 直接传fd，而不是conn
+        data = {
+            "game_id":self.game_id,
+            "player_id":p.player_id
+        }
+        conn.send(json.dumps(data).encode('utf-8'))
+
     # 添加一个玩家进入这局游戏
     def add_player(self, conn):
         # TODO 暂时把socket fd当作player_id, Board最后也要改掉
-        # player_id = conn.fileno()
-        self.player[0] = Player(0, conn, Board(16,28))
+        player_id = conn.fileno()
+        self.player[player_id] = Player(player_id, conn, Board(16,28))
 
     def get_player(self, player_id):
         return self.player[player_id]
@@ -341,6 +348,7 @@ class Game(object):
         self.player.get(player_id).board.move_piece(K_DOWN)
 
 
+
 def accept(s, mask):
     conn,addr = s.accept()
     conn.setblocking(False)
@@ -348,13 +356,15 @@ def accept(s, mask):
 
     game = Game(1)
     game.add_player(conn)
-    games[game.game_id] = game # TODO 先只用game_id为0的Game对象
+    games[game.game_id] = game
+
+    game.send_info(conn)
 
 
 def read(conn, mask):
     raw_request_jsons = conn.recv(1024).decode("utf-8")
     print(raw_request_jsons)
-    request_jsons = split_json(raw_request_jsons) #re.findall(r'\{.*?\}', raw_request_jsons) #TODO 很奇怪，要改成一次只发送1个json吗
+    request_jsons = split_json(raw_request_jsons) #TODO 很奇怪，要改成一次只发送1个json吗
     for j in request_jsons:
         js = json.loads(j)
 
@@ -387,6 +397,7 @@ s.listen(10)
 selector = selectors.DefaultSelector()
 selector.register(s, selectors.EVENT_READ, accept)
 
+#TODO 同步问题
 games = {}
 
 while True:
