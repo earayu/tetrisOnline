@@ -1,5 +1,7 @@
 # readme
 
+requests: pygame
+
 这是一个联机版的俄罗斯方块游戏
 
 网络需要用NIO！

@@ -1,4 +1,4 @@
-import random,pygame
+import random, pygame, json, time
 from pygame.locals import *
 
 
@@ -158,7 +158,6 @@ class Board:
 
     def check_bottom(self, shape=None):
         shape = shape or self.active_shape
-        # TODO 检查一下这个方法
         if shape.y + shape.bottom_edge + 1 >= self.height:
             return True
         return False
@@ -259,4 +258,82 @@ class Player:
         self.board = board
 
 
+class Game(object):
+    game_id = 0
+    ticks = 0
+    factor = 4
+    frame_rate = 60
+    is_paused = False
+    starting_level = 1
+    level = 1
+
+    def __init__(self, starting_level=1):
+        self.game_id = int(time.time()*1000000)
+        self.player = {}
+        self.starting_level = int(starting_level)
+        self.reset()
+
+    def reset(self):
+        self.level = self.starting_level
+
+    def should_update(self):
+        if self.is_paused:
+            return False
+
+        self.ticks += 1
+        # level越高，刷新速度越快
+        if self.ticks >= (self.frame_rate - (self.level * self.factor)):
+            self.ticks = 0
+            return True
+        return False
+
+    def send_info(self, conn):
+        p = self.get_player(conn.fileno())
+        data = {
+            "game_id":self.game_id,
+            "player_id":p.player_id
+        }
+        conn.send(json.dumps(data).encode('utf-8'))
+
+    # 添加一个玩家进入这局游戏
+    def add_player(self, conn):
+        # TODO 暂时把socket fd当作player_id, Board最后也要改掉
+        player_id = conn.fileno()
+        self.player[player_id] = Player(self.game_id, player_id, conn, Board(16,28))
+
+    def get_player(self, player_id):
+        return self.player[player_id]
+
+    # 将游戏状态发送给同一局游戏中的所有玩家
+    def show(self, player_id):
+        dd = []
+        # 遍历map
+        for p in self.player.values():
+            dd.append(
+                {
+                    "player_id":p.player_id,
+                    "board": p.board.board,
+                    "active_shape": p.board.active_shape.shape,
+                    "x": p.board.active_shape.x,
+                    "y": p.board.active_shape.y
+                }
+            )
+
+        data = json.dumps(dd).encode('utf-8')
+        for p in self.player.values():
+            if p.player_id == player_id:
+                p.conn.send(data)
+
+    # 响应相应玩家的操作
+    def up(self, player_id):
+        self.player.get(player_id).board.move_piece(K_UP)
+
+    def left(self, player_id):
+        self.player.get(player_id).board.move_piece(K_LEFT)
+
+    def right(self, player_id):
+        self.player.get(player_id).board.move_piece(K_RIGHT)
+
+    def down(self, player_id):
+        self.player.get(player_id).board.move_piece(K_DOWN)
 
