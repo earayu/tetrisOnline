@@ -356,8 +356,15 @@ def accept(s, mask):
     conn.setblocking(False)
     selector.register(conn, selectors.EVENT_READ, read)
 
-    game = Game(1)
+    if len(pending_game) == 0:
+        pending_game.append(Game(1))
+
+    game = pending_game[0]
     game.add_player(conn)
+
+    if len(game.player) == 2:
+        pending_game.remove(game)
+
     games[game.game_id] = game
 
     game.send_info(conn)
@@ -401,7 +408,7 @@ selector.register(s, selectors.EVENT_READ, accept)
 #TODO 同步问题
 games = {}
 
-
+#TODO 方块速率下降调整
 def schedule_move_down(interval=0.02):
     def move_down():
         while True:
@@ -413,9 +420,9 @@ def schedule_move_down(interval=0.02):
     t = threading.Thread(target=move_down)
     t.start()
 
-schedule_move_down()
+pending_game = []
 
-#TODO move_down速率应该跟客户端无关
+schedule_move_down()
 while True:
     events = selector.select()
     for key, mask in events:
