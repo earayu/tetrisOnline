@@ -5,14 +5,10 @@ from pygame.locals import *
 # 游戏基本设置
 WIDTH = 16
 HEIGHT = 28
-
 BLOCK_SIZE = 15
-
 WINDOW_WIDTH = WIDTH*BLOCK_SIZE
 WINDOW_HEIGHT = HEIGHT*BLOCK_SIZE
-
 FPS = 60
-
 # 颜色
 WHITE = (255,255,255)
 RED = (255,0,0)
@@ -79,7 +75,7 @@ class Shape(object):
                     return y
 
 
-class Board():
+class Board:
     active_shape = None
     pending_shape = None
     board = None
@@ -247,3 +243,20 @@ class Board():
         y += 1
         rect = pygame.Rect(x * BLOCK_SIZE, y * BLOCK_SIZE, BLOCK_SIZE,BLOCK_SIZE)
         pygame.draw.rect(surface,RED,rect)
+
+
+class Player:
+    game_id = 0
+    player_id = 0
+    conn = None
+    board = None
+    score = 0
+
+    def __init__(self, game_id, player_id, conn, board):
+        self.game_id = game_id
+        self.player_id = player_id
+        self.conn = conn
+        self.board = board
+
+
+

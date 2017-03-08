@@ -9,16 +9,7 @@ import threading
 
 HOST, PORT = "localhost", 9999
 
-class Player():
-    player_id = 0
-    conn = None
-    board = None
-    score = 0
 
-    def __init__(self, player_id, conn, board):
-        self.player_id = player_id
-        self.conn = conn
-        self.board = board
 
 
 class Game(object):
@@ -62,7 +53,7 @@ class Game(object):
     def add_player(self, conn):
         # TODO 暂时把socket fd当作player_id, Board最后也要改掉
         player_id = conn.fileno()
-        self.player[player_id] = Player(player_id, conn, Board(16,28))
+        self.player[player_id] = Player(self.game_id, player_id, conn, Board(16,28))
 
     def get_player(self, player_id):
         return self.player[player_id]
