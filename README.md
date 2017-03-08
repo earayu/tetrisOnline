@@ -18,3 +18,4 @@
 TODO game_id和player_id
 TODO 减小服务器和客户端交互频率
 TODO 引入匹配机制
+TODO 重构代码，使之更加模块化
