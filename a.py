@@ -316,7 +316,7 @@ class Game(object):
         return self.player[player_id]
 
     # 将游戏状态发送给同一局游戏中的所有玩家
-    def show(self):
+    def show(self, player_id):
         dd = []
         # 遍历map
         for p in self.player.values():
@@ -332,7 +332,8 @@ class Game(object):
 
         data = json.dumps(dd).encode('utf-8')
         for p in self.player.values():
-            p.conn.send(data)
+            if p.player_id == player_id:
+                p.conn.send(data)
 
     # 响应相应玩家的操作
     def up(self, player_id):
@@ -371,7 +372,7 @@ def read(conn, mask):
         game = games[int(js["game_id"])]
         player_id = int(js["player_id"])
         if js["opr"] == "show":
-            game.show()
+            game.show(player_id)
         if js["opr"] == "up":
             game.up(player_id)
         if js["opr"] == "left":

@@ -336,7 +336,7 @@ dd["active_shape"] = bb.active_shape
 def get_board(sock):
     sock.sendall(bytes(show_str(player_id), 'utf-8'))
     # print(sock.recv(40240).decode('utf-8'), file=sys.stderr)
-    raw = sock.recv(40240)
+    raw = sock.recv(4024)
     print(raw)
     raw_recv_data = json.loads(raw.decode('utf-8'))
     # TODO 多人游戏，要按照player_id分离json
@@ -376,20 +376,21 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
 
     while True:
         get_board(sock)
+        time.sleep(0.02)
+
+
+        # 渲染
         frameCount += 1
         for event in pygame.event.get():
             key_dir = None
             if event.type == QUIT:
                 terminate()
-
             pressed_keys = pygame.key.get_pressed()
-
             if event.type == KEYDOWN:
                 if event.key == K_UP:
                     sock.sendall(bytes(up_str(player_id), 'utf-8'))
                 if event.key == K_w:
                     board2.move_piece(K_UP)
-
             if pressed_keys[K_LEFT]:
                 key_dir = K_LEFT
             if pressed_keys[K_a]:
@@ -402,7 +403,6 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
                 key_dir = K_DOWN
             if pressed_keys[K_s]:
                 key_dir2 = K_s
-
         if key_dir in [K_LEFT,K_RIGHT,K_DOWN] and frameCount > 4:
             frameCount = 0
             # board.move_piece(key_dir)
@@ -412,15 +412,10 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
                 sock.sendall(bytes(right_str(player_id), 'utf-8'))
             if key_dir == K_DOWN:
                 sock.sendall(bytes(down_str(player_id), 'utf-8'))
-
-
         game.draw(0,0)
         game2.draw(280,0)
-
-
         # 渲染一帧
         pygame.display.update()
-
         fpsClock.tick(FPS)
 
 
