@@ -334,10 +334,12 @@ dd["active_shape"] = bb.active_shape
 
 
 def get_board(sock):
+
+    print(game_id)
+
     sock.sendall(bytes(show_str(player_id), 'utf-8'))
     # print(sock.recv(40240).decode('utf-8'), file=sys.stderr)
     raw = sock.recv(4024)
-    print(raw)
     raw_recv_data = json.loads(raw.decode('utf-8'))
     # TODO 多人游戏，要按照player_id分离json
     for j in raw_recv_data:
@@ -376,8 +378,6 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
 
     while True:
         get_board(sock)
-        time.sleep(0.02)
-
 
         # 渲染
         frameCount += 1

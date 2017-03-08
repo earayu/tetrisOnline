@@ -4,6 +4,8 @@ from pygame.locals import *
 import json
 import socket
 import selectors
+import threading
+import schedule
 
 HOST, PORT = "localhost", 9999
 
@@ -145,7 +147,6 @@ class Board():
 
     def move_down(self):
         self.active_shape.y += 1
-        print(self.active_shape.y)
 
         if self.check_bottom() or self.is_collision():
             self.active_shape.y -= 1
@@ -269,7 +270,6 @@ class Game(object):
     # TODO 这些都要N个，支持N人同一局游戏
     # conn = None
     # board = None
-    player = {}
 
 
     ticks = 0
@@ -281,6 +281,7 @@ class Game(object):
 
     def __init__(self, starting_level=1):
         self.game_id = len(games)+1
+        self.player = {}
         self.starting_level = int(starting_level)
         self.reset()
 
@@ -364,7 +365,6 @@ def accept(s, mask):
 
 def read(conn, mask):
     raw_request_jsons = conn.recv(1024).decode("utf-8")
-    print(raw_request_jsons)
     request_jsons = split_json(raw_request_jsons) #TODO 很奇怪，要改成一次只发送1个json吗
     for j in request_jsons:
         js = json.loads(j)
@@ -401,18 +401,28 @@ selector.register(s, selectors.EVENT_READ, accept)
 #TODO 同步问题
 games = {}
 
+
+def schedule_move_down(interval=0.02):
+    def move_down():
+        while True:
+            for game in games.values():
+                if game.should_update():
+                    for p in game.player.values():
+                        p.board.move_down()
+            time.sleep(interval)
+    t = threading.Thread(target=move_down)
+    t.start()
+
+schedule_move_down()
+
+#TODO move_down速率应该跟客户端无关
 while True:
-    events = selector.select(SPEED[4])
+    events = selector.select()
     for key, mask in events:
         callback = key.data  # 掉accept函数
         callback(key.fileobj, mask)  # key.fileobj = 文件句柄 （相当于上个例子中检测的自己）
 
-        for fd in games:
-            game = games[fd]
-            if game.should_update():
-                for pid in game.player:
-                    p = game.player[pid]
-                    p.board.move_down()
+
 
 
 
