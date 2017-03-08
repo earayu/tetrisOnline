@@ -5,7 +5,6 @@ import json
 import socket
 import selectors
 import threading
-import schedule
 
 HOST, PORT = "localhost", 9999
 

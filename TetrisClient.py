@@ -347,6 +347,12 @@ def get_board(sock):
             # board.pending_shape.shape = recv_data["pending_shape"]
             board.active_shape.x = recv_data["x"]
             board.active_shape.y = recv_data["y"]
+        else:
+            recv_data = j
+            board2.board = recv_data["board"]
+            board2.active_shape.shape = recv_data["active_shape"]
+            board2.active_shape.x = recv_data["x"]
+            board2.active_shape.y = recv_data["y"]
 
 
 
