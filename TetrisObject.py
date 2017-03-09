@@ -155,6 +155,12 @@ class Board:
             return False
         return True
 
+    # 还可以更快点，瞬间到底
+    def move_bottom(self):
+        at_bottom = self.check_bottom() or self.is_collision()
+        while at_bottom is False:
+            at_bottom = self.move_down()
+
     #查看是否出界
     def out_of_bounds(self, shape=None):
         shape = shape or self.active_shape
@@ -227,6 +233,8 @@ class Board:
             self.move_down()
         elif motion_state == K_a:
             self.move_left()
+        elif motion_state == K_SPACE:
+            self.move_bottom()
 
     def draw_game_board(self):
         bsurface = pygame.Surface((WINDOW_WIDTH,WINDOW_HEIGHT))
@@ -362,4 +370,7 @@ class Game(object):
 
     def down(self, player_id):
         self.player.get(player_id).board.move_piece(K_DOWN)
+
+    def bottom(self, player_id):
+        self.player.get(player_id).board.move_piece(K_SPACE)
 

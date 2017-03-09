@@ -106,20 +106,27 @@ def process_key_event(sock, frames=4):
                 send_key_data(sock, request('up'))
         if pressed_keys[K_LEFT]:
             key_dir = K_LEFT
-        if pressed_keys[K_RIGHT]:
+        elif pressed_keys[K_RIGHT]:
             key_dir = K_RIGHT
-        if pressed_keys[K_DOWN]:
+        elif pressed_keys[K_DOWN]:
             key_dir = K_DOWN
+        elif pressed_keys[K_SPACE]:
+            key_dir = K_SPACE
+
+    if key_dir == K_SPACE:
+        send_key_data(sock, request('bottom'))
+
 
     # 每4帧
     if key_dir is not None and frame_count > frames:
         frame_count = 0
         if key_dir == K_LEFT:
             send_key_data(sock, request('left'))
-        if key_dir == K_RIGHT:
+        elif key_dir == K_RIGHT:
             send_key_data(sock, request('right'))
-        if key_dir == K_DOWN:
+        elif key_dir == K_DOWN:
             send_key_data(sock, request('down'))
+
 
 
 HOST, PORT = "localhost", 9999

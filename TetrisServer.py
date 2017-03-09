@@ -44,7 +44,6 @@ def match(conn, player_id):
     game.add_player(player)
 
 
-    #TODO 这里其实不应该这样。应该第一个玩家进入匹配就发给他game_id。
     if len(game.player) == 2:
         playing_games[game.game_id] = game
         pending_game.remove(game)
@@ -88,8 +87,6 @@ def read(conn):
             return
 
         game = playing_games[int(js["game_id"])]
-        #TODO 第一个玩家在matching界面退出的话，获取不到game_id
-
         if js["opr"] == "show":
             game.show(player_id)
         if js["opr"] == "up":
@@ -100,6 +97,8 @@ def read(conn):
             game.right(player_id)
         if js["opr"] == "down":
             game.down(player_id)
+        if js["opr"] == "bottom":
+            game.bottom(player_id)
 
 #TODO 垃圾实现
 def split_json(str):
