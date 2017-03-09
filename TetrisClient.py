@@ -6,6 +6,7 @@ import Menu
 
 
 
+
 def draw(board, x,y):
     BSURFACE = board.draw_game_board()
     SURFACE.blit(BSURFACE,(x,y))
@@ -14,8 +15,9 @@ def draw(board, x,y):
 def terminate(sock):
     # send_key_data(sock, request('quit'))
     pygame.quit()
+    send_key_data(sock, request('quit'))
     #TODO 如果在matching页面退出，会因为recv阻塞而不能退出.
-    sock.close() #TODO 直接close，服务端也会出错。而且并没有删掉在服务端的匹配用户
+    # sock.close() #TODO 直接close，服务端也会出错。而且并没有删掉在服务端的匹配用户
     sys.exit()
 
 
@@ -50,6 +52,9 @@ def m(sock):
     sock.send(request("match"))
     cli_player.status = player_status.matching
     cli_player, svr_player = load_basic_info(sock)
+    # 第一个玩家遇到matching状态,需要再等待一个playing状态
+    if cli_player.player_status == player_status.matching:
+        m(sock)
 
 def match(sock):
     if cli_player.status == player_status.init:
@@ -82,8 +87,10 @@ def load_basic_info(sock):
     print(game_info_json)
     game_id = game_info_json["game_id"]
     player_id = int(game_info_json["player_id"])
-    return Player(game_id, player_id, sock, Board(16,28)),Player(game_id, player_id, sock, Board(16,28)) #TODO board参数
-
+    status = player_status[game_info_json["player_status"]]
+    c,s = Player(game_id, player_id, sock, Board(16,28)),Player(game_id, player_id, sock, Board(16,28)) #TODO board参数
+    c.player_status = status
+    return c,s
 
 # 每隔4帧数处理一次
 def process_key_event(sock, frames=4):
@@ -136,7 +143,7 @@ menu = Menu.Menu(SURFACE)
 
 while True:
 
-    if cli_player.game_id == 0:
+    if cli_player.player_status in [player_status.init, player_status.matching]:
         menu_screen(menu, sock)
         continue
 

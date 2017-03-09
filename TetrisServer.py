@@ -10,10 +10,11 @@ def get_init_player(player_id):
     return player
 
 
-def send_info(game_id, player_id, conn):
+def send_info(game_id, player_id, conn, player_status):
     data = {
         "game_id": game_id,
-        "player_id": player_id
+        "player_id": player_id,
+        "player_status":player_status
     }
     conn.send(json.dumps(data).encode('utf-8'))
 
@@ -24,32 +25,51 @@ def accept(s):
     selector.register(conn, selectors.EVENT_READ, read)
 
     player_id = conn.fileno()
+    #TODO 并不是每个玩家都要加入init_player。单机玩的就可以不要。当然单机玩也可以通过init_player获取数据
     init_player[player_id] = Player(0, player_id, conn, Board(16, 28))
 
-    send_info(0, player_id, conn) #给刚建立连接的玩家发送的game_id为0
+    send_info(0, player_id, conn, player_status="init") #给刚建立连接的玩家发送的game_id为0
 
-
+# 匹配游戏，2种情况：能匹配到；不能匹配到，等待下一个玩家
 def match(conn, player_id):
     if len(pending_game) == 0:
         pending_game.append(Game(1))
 
     game = pending_game[0]
 
-    if game.has_player_id(player_id):
+    if game.has_player_id(player_id):#客户端重复发送匹配请求（当然我在客户端做了处理，我自己的程序是无法重复发送请求的）
         return
 
-    game.add_player(get_init_player(conn.fileno()))
+    player = get_init_player(conn.fileno())
+    game.add_player(player)
 
-    playing_games[game.game_id] = game
 
     #TODO 这里其实不应该这样。应该第一个玩家进入匹配就发给他game_id。
     if len(game.player) == 2:
+        playing_games[game.game_id] = game
         pending_game.remove(game)
+        game.game_status = game_status.playing
         for p in game.player.values():
-            send_info(game_id=game.game_id, player_id=p.player_id, conn=p.conn)
+            send_info(game_id=game.game_id, player_id=p.player_id, conn=p.conn, player_status="playing")
+        return
+
+    send_info(game_id=game.game_id, player_id=player.player_id, conn=player.conn, player_status="matching")
+
+
 
 def read(conn):
-    raw_request_jsons = conn.recv(1024).decode("utf-8")
+    try:
+        raw_request_jsons = conn.recv(1024).decode("utf-8")
+    except ConnectionResetError as e: #客户端异常退出
+        # 客户端在匹配中异常退出
+        for game in pending_game:
+            for p in game.player.values():
+                if p.player_id == conn.fileno():
+                    pending_game.remove(game)
+        selector.unregister(conn)
+        conn.close()
+        return
+
     request_jsons = split_json(raw_request_jsons) #TODO 很奇怪，要改成一次只发送1个json吗
     print(request_jsons)
     for j in request_jsons:
@@ -59,11 +79,17 @@ def read(conn):
         if js["opr"] == "match":
             match(conn, player_id)
             continue
+        if js["opr"] == "quit": #客户端退出（非异常）
+            for game in pending_game:
+                if game.game_id == int(js["game_id"]):
+                    pending_game.remove(game)
+                    selector.unregister(conn)
+                    conn.close()
+            return
 
         game = playing_games[int(js["game_id"])]
         #TODO 第一个玩家在matching界面退出的话，获取不到game_id
-        # if js["opr"] == "quit":
-        #     game.quit(player_id)
+
         if js["opr"] == "show":
             game.show(player_id)
         if js["opr"] == "up":
@@ -92,13 +118,7 @@ s.listen(10)
 selector = selectors.DefaultSelector()
 selector.register(s, selectors.EVENT_READ, accept)
 
-#TODO 同步问题
-#正在进行的游戏
-playing_games = {}
-#刚建立连接，还没开始游戏的玩家
-init_player = {}
-#正在匹配中的游戏
-pending_game = []
+
 
 #TODO 方块速率下降调整，或许下降速度应该跟帧数和水平挂钩，而不只是时间
 def schedule_move_down(interval=0.02):

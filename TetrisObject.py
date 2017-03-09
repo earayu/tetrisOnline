@@ -14,6 +14,13 @@ FPS = 60
 WHITE = (255,255,255)
 RED = (255,0,0)
 
+#TODO 同步问题
+#正在进行的游戏
+playing_games = {}
+#刚建立连接，还没开始游戏的玩家
+init_player = {}
+#正在匹配中的游戏
+pending_game = []
 
 class Shape(object):
     _shapes = [
@@ -247,6 +254,7 @@ class Board:
 
 # 玩家状态:init(建立和服务器的链接)  -> matching(正在匹配)  ->  playing  ->  win/lose   ->quit
 player_status = Enum("player_status", ("init", "matching", "playing", "win", "lose", "quit"))
+game_status = Enum("game_status", ("init", "matching", "playing", "finish"))
 
 class Player:
     game_id = 0
@@ -275,6 +283,7 @@ class Game(object):
     level = 1
 
     def __init__(self, starting_level=1):
+        self.game_status = game_status.init
         self.game_id = int(time.time()*1000000)
         self.player = {}
         self.starting_level = int(starting_level)
@@ -285,7 +294,7 @@ class Game(object):
 
     #TODO 引入游戏状态, len(self.player)<2这行代码改掉
     def should_update(self):
-        if self.is_paused or len(self.player)<2:
+        if self.is_paused or self.game_status != game_status.playing:
             return False
 
         self.ticks += 1
@@ -336,6 +345,10 @@ class Game(object):
     # TODO 有一个玩家退出游戏
     def quit(self, player_id):
         self.get_player(player_id).status = player_status.quit
+        if len(self.player) == 1:
+            pending_game.pop(self)
+        # elif len(self.player) == 2:
+        # TODO 另一方胜利
 
     # 响应相应玩家的操作
     def up(self, player_id):
