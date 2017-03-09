@@ -1,6 +1,6 @@
 from random import *
 import pygame
-
+from pygame.locals import *
 
 class Menu:
 	"""
@@ -131,6 +131,43 @@ class Menu:
 		self.surface.blit(label_2, label_2_rect)
 		self.surface.blit(label_3, label_3_rect)
 		self.surface.blit(label_4, label_4_rect)
+
+		pygame.display.update()
+
+	# 显示正在匹配的画面
+	def matching_screen(self):
+		self.surface.fill((0,0,0))
+
+		center = (self.surface.get_width() / 2, self.surface.get_height() / 2)
+
+		font_color = (255, 255, 255)
+
+		tetris_font = pygame.font.Font("freesansbold.ttf", 64)
+		tetris_font.set_bold(1)
+
+		label_1 = tetris_font.render("Matching...", 1, font_color)
+		label_1_rect = label_1.get_rect()
+		label_1_rect.center = (center[0], center[1] - 60)
+
+		self.surface.blit(label_1, label_1_rect)
+
+		pygame.display.update()
+
+
+
+	def process_key_event(self):
+		for event in pygame.event.get():
+			if event.type == QUIT:
+				terminate()
+			if event.type == KEYDOWN:
+				if event.key == K_DOWN:
+					self.move_cursor(-1)
+				elif event.key == K_UP:
+					self.move_cursor(1)
+				elif event.key in [K_RETURN, K_KP_ENTER]:
+					if self.matchPlayer == 1:
+						return "match"
+
 
 	def move_cursor(self,direction):
 		if self.matchPlayer:

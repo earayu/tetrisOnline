@@ -25,7 +25,6 @@ def accept(s):
 
     player_id = conn.fileno()
     init_player[player_id] = Player(0, player_id, conn, Board(16, 28))
-    print(player_id)
 
     send_info(0, player_id, conn) #给刚建立连接的玩家发送的game_id为0
 
@@ -35,6 +34,10 @@ def match(conn, player_id):
         pending_game.append(Game(1))
 
     game = pending_game[0]
+
+    if game.has_player_id(player_id):
+        return
+
     game.add_player(get_init_player(conn.fileno()))
 
     playing_games[game.game_id] = game

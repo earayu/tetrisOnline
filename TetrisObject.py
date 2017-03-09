@@ -301,6 +301,9 @@ class Game(object):
     #     # TODO 暂时把socket fd当作player_id, Board最后也要改掉
     #     self.player[conn.fileno()] = Player(self.game_id, conn.fileno(), conn, Board(16,28))
 
+    def has_player_id(self, player_id):
+        return self.player.get(player_id) is not None
+
     # 添加一个玩家进入这局游戏
     def add_player(self, player):
         # TODO 暂时把socket fd当作player_id, Board最后也要改掉

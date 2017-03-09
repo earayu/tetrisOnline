@@ -48,7 +48,22 @@ def m(sock):
     cli_player, svr_player = load_basic_info(sock)
 
 def match(sock):
-    threading.Thread(target=m, args=(sock,)).start()
+    if cli_player.status == player_status.init:
+        threading.Thread(target=m, args=(sock,)).start()
+
+
+f = 0
+
+def menu_screen(menu):
+    global f
+    menu.draw_menu()
+    if menu.process_key_event() == 'match':
+        match(sock)
+        f = 1
+    if f == 0:
+        menu.update_menu()
+    else:
+        menu.matching_screen()
 
 # 匹配画面
 def match_screen():
@@ -95,11 +110,11 @@ def process_key_event(sock, frames=4):
 
 HOST, PORT = "localhost", 9999
 
-# sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-# sock.connect((HOST, PORT))
+sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+sock.connect((HOST, PORT))
 
-# cli_player, svr_player = load_basic_info(sock) #cli_player为本方,svr_player为对方
-#
+cli_player, svr_player = load_basic_info(sock) #cli_player为本方,svr_player为对方
+
 # match(sock)
 
 pygame.init()
@@ -113,24 +128,21 @@ frame_count = 0
 
 import Menu
 
+menu = Menu.Menu(SURFACE)
+
 while True:
 
-    # if cli_player.game_id == 0:
-    print("匹配中...")
-    menu = Menu.Menu(SURFACE)
-    menu.draw_menu()
-    menu.update_menu()
-    # menu.draw_info(SURFACE)
-        # menu.update_menu(SURFACE)
-        # continue
+    if cli_player.game_id == 0:
+        menu_screen(menu)
+        continue
 
-
-    # get_board(sock)
-    # process_key_event(sock)
-    # draw(cli_player.board,0,0)
-    # draw(svr_player.board,280,0)
+    SURFACE.fill(WHITE)
+    get_board(sock)
+    process_key_event(sock)
+    draw(cli_player.board,0,0)
+    draw(svr_player.board,280,0)
     pygame.display.update()
     fpsClock.tick(FPS)
 
-# sock.close()
+sock.close()
 
