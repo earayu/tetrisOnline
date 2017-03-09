@@ -283,8 +283,9 @@ class Game(object):
     def reset(self):
         self.level = self.starting_level
 
+    #TODO 引入游戏状态, len(self.player)<2这行代码改掉
     def should_update(self):
-        if self.is_paused:
+        if self.is_paused or len(self.player)<2:
             return False
 
         self.ticks += 1
