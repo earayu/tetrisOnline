@@ -1,5 +1,6 @@
 import random, pygame, json, time
 from pygame.locals import *
+from enum import Enum
 
 
 # 游戏基本设置
@@ -244,6 +245,9 @@ class Board:
         pygame.draw.rect(surface,RED,rect)
 
 
+# 玩家状态:init(建立和服务器的链接)  -> matching(正在匹配)  ->  playing  ->  win/lose   ->quit
+player_status = Enum("player_status", ("init", "matching", "playing", "win", "lose", "quit"))
+
 class Player:
     game_id = 0
     player_id = 0
@@ -256,6 +260,9 @@ class Player:
         self.player_id = player_id
         self.conn = conn
         self.board = board
+        self.status = player_status.init
+
+
 
 
 class Game(object):
@@ -287,19 +294,17 @@ class Game(object):
             return True
         return False
 
-    def send_info(self, conn):
-        p = self.get_player(conn.fileno())
-        data = {
-            "game_id":self.game_id,
-            "player_id":p.player_id
-        }
-        conn.send(json.dumps(data).encode('utf-8'))
+
+
+    # # 添加一个玩家进入这局游戏
+    # def add_player(self, conn):
+    #     # TODO 暂时把socket fd当作player_id, Board最后也要改掉
+    #     self.player[conn.fileno()] = Player(self.game_id, conn.fileno(), conn, Board(16,28))
 
     # 添加一个玩家进入这局游戏
-    def add_player(self, conn):
+    def add_player(self, player):
         # TODO 暂时把socket fd当作player_id, Board最后也要改掉
-        player_id = conn.fileno()
-        self.player[player_id] = Player(self.game_id, player_id, conn, Board(16,28))
+        self.player[player.player_id] = player
 
     def get_player(self, player_id):
         return self.player[player_id]
@@ -323,6 +328,10 @@ class Game(object):
         for p in self.player.values():
             if p.player_id == player_id:
                 p.conn.send(data)
+
+    # TODO 有一个玩家退出游戏
+    def quit(self, player_id):
+        self.get_player(player_id).status = player_status.quit
 
     # 响应相应玩家的操作
     def up(self, player_id):

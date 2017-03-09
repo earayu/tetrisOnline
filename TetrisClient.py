@@ -9,7 +9,8 @@ def draw(board, x,y):
     SURFACE.blit(BSURFACE,(x,y))
 
 #TODO 告诉服务器退出，服务器应该也要有心跳测试
-def terminate():
+def terminate(sock):
+    send_data(sock, request('quit'))
     pygame.quit()
     sys.exit()
 
@@ -21,7 +22,7 @@ def request(opr):
 
 def get_board(sock):
     sock.sendall(request('show'))
-    raw = sock.recv(4024)
+    raw = sock.recv(8000)
     raw_recv_data = json.loads(raw.decode('utf-8'))
     # TODO 多人游戏，要按照player_id分离json
     for recv_data in raw_recv_data:
@@ -43,6 +44,7 @@ def send_data(sock, data):
 # 加载这局游戏的基本数据
 def load_basic_info(sock):
     game_info_json = json.loads(sock.recv(1024).decode('utf-8'))
+    print(game_info_json)
     game_id = game_info_json["game_id"]
     player_id = int(game_info_json["player_id"])
     return Player(game_id, player_id, sock, Board(16,28)),Player(game_id, player_id, sock, Board(16,28)) #TODO board参数
@@ -55,7 +57,7 @@ def process_key_event(sock, frames=4):
     for event in pygame.event.get():
         key_dir = None
         if event.type == QUIT:
-            terminate()
+            terminate(sock)
         pressed_keys = pygame.key.get_pressed()
         if event.type == KEYDOWN:
             if event.key == K_UP:
@@ -84,6 +86,9 @@ sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 sock.connect((HOST, PORT))
 
 cli_player, svr_player = load_basic_info(sock) #cli_player为本方,svr_player为对方
+
+sock.send(request("match"))
+cli_player, svr_player = load_basic_info(sock)
 
 pygame.init()
 SURFACE = pygame.display.set_mode((WINDOW_WIDTH*2+50,WINDOW_HEIGHT)) #窗口大小
