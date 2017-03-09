@@ -42,6 +42,7 @@ def match(conn, player_id):
 
     playing_games[game.game_id] = game
 
+    #TODO 这里其实不应该这样。应该第一个玩家进入匹配就发给他game_id。
     if len(game.player) == 2:
         pending_game.remove(game)
         for p in game.player.values():
@@ -60,8 +61,9 @@ def read(conn):
             continue
 
         game = playing_games[int(js["game_id"])]
-        if js["opr"] == "quit":
-            game.quit(player_id)
+        #TODO 第一个玩家在matching界面退出的话，获取不到game_id
+        # if js["opr"] == "quit":
+        #     game.quit(player_id)
         if js["opr"] == "show":
             game.show(player_id)
         if js["opr"] == "up":
@@ -111,12 +113,12 @@ def schedule_move_down(interval=0.02):
 
 
 schedule_move_down()
+
 while True:
     events = selector.select()
     for key, mask in events:
-        callback = key.data  # 掉accept函数
-        callback(key.fileobj)  # key.fileobj = 文件句柄 （相当于上个例子中检测的自己）
-
+        callback = key.data
+        callback(key.fileobj)
 
 
 

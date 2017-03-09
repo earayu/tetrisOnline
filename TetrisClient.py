@@ -2,6 +2,8 @@ import socket
 import sys
 from TetrisObject import *
 import json, threading
+import Menu
+
 
 
 def draw(board, x,y):
@@ -10,8 +12,10 @@ def draw(board, x,y):
 
 #TODO 告诉服务器退出，服务器应该也要有心跳测试
 def terminate(sock):
-    send_key_data(sock, request('quit'))
+    # send_key_data(sock, request('quit'))
     pygame.quit()
+    #TODO 如果在matching页面退出，会因为recv阻塞而不能退出.
+    sock.close() #TODO 直接close，服务端也会出错。而且并没有删掉在服务端的匹配用户
     sys.exit()
 
 
@@ -54,12 +58,15 @@ def match(sock):
 
 f = 0
 # TODO 修改代码
-def menu_screen(menu):
+def menu_screen(menu, sock):
     global f
     menu.draw_menu()
-    if menu.process_key_event() == 'match':
+    r = menu.process_key_event()
+    if r == 'match':
         match(sock)
         f = 1
+    elif r == 'terminate':
+        terminate(sock)
     if f == 0:
         menu.update_menu()
     else:
@@ -115,8 +122,6 @@ sock.connect((HOST, PORT))
 
 cli_player, svr_player = load_basic_info(sock) #cli_player为本方,svr_player为对方
 
-# match(sock)
-
 pygame.init()
 SURFACE = pygame.display.set_mode((WINDOW_WIDTH*2+50,WINDOW_HEIGHT)) #窗口大小
 SURFACE.fill(WHITE)
@@ -126,14 +131,13 @@ fpsClock = pygame.time.Clock()
 key_dir = None
 frame_count = 0
 
-import Menu
 
 menu = Menu.Menu(SURFACE)
 
 while True:
 
     if cli_player.game_id == 0:
-        menu_screen(menu)
+        menu_screen(menu, sock)
         continue
 
     SURFACE.fill(WHITE)

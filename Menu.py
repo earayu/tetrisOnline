@@ -158,7 +158,7 @@ class Menu:
 	def process_key_event(self):
 		for event in pygame.event.get():
 			if event.type == QUIT:
-				terminate()
+				return "terminate"
 			if event.type == KEYDOWN:
 				if event.key == K_DOWN:
 					self.move_cursor(-1)
@@ -203,56 +203,3 @@ class Menu:
 		self.gameStart = 0
 		self.aboutDone=0
 
-
-if __name__ == '__main__':
-	import pygame, sys
-	from pygame.locals import *
-
-	# 游戏基本设置
-	WINDOW_WIDTH = 300
-	WINDOW_HEIGHT = 600
-
-	FPS = 30
-
-	# 颜色
-	WHITE = (255, 255, 255)
-
-
-	def terminate():
-		pygame.quit()
-		sys.exit()
-
-
-	pygame.init()
-	SURFACE = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
-	pygame.display.set_caption("俄罗斯方块")
-	fpsClock = pygame.time.Clock()
-
-	def show_text(font,size,text,color,center,surface):
-		f = pygame.font.Font(font,size)
-		s = f.render(text, True, color)
-		r = s.get_rect()
-		r.center = center
-		surface.blit(s,r)
-
-
-	a = Menu(SURFACE)
-
-	while True:
-		for event in pygame.event.get():
-			if event.type == QUIT:
-				terminate()
-			if event.type == KEYDOWN:
-				if event.key == K_DOWN:
-					a.move_cursor(-1)
-				elif event.key == K_UP:
-					a.move_cursor(1)
-
-		SURFACE.fill((0,0,0))
-		a.draw_menu()
-		a.update_menu()
-
-		show_text("freesansbold.ttf",9,"HIHIHI", (0,0,0), (100,100), SURFACE)
-
-		pygame.display.update()
-		fpsClock.tick(FPS)
