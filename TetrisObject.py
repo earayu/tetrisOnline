@@ -346,7 +346,8 @@ class Game(object):
                     "board": p.board.board,
                     "active_shape": p.board.active_shape.shape,
                     "x": p.board.active_shape.x,
-                    "y": p.board.active_shape.y
+                    "y": p.board.active_shape.y,
+                    "dead": p.board.dead
                 }
             )
 
@@ -363,18 +364,25 @@ class Game(object):
         # elif len(self.player) == 2:
         # TODO 另一方胜利
 
+
     # 响应相应玩家的操作
     def up(self, player_id):
         self.player.get(player_id).board.move_piece(K_UP)
 
     def left(self, player_id):
-        self.player.get(player_id).board.move_piece(K_LEFT)
+        self.player.get(player_id).board.move_left()
 
     def right(self, player_id):
-        self.player.get(player_id).board.move_piece(K_RIGHT)
+        self.player.get(player_id).board.move_right()
 
     def down(self, player_id):
-        self.player.get(player_id).board.move_down()
+        b = self.player.get(player_id).board
+        b.move_down()
+        if b.dead:
+            playing_games.pop(self.game_id)
+            self.game_status = game_status.finish
+            for p in self.player.values():
+                p.player_status = player_status.lose if p.player_id == player_id else player_status.win #python 3元表达式
 
     def bottom(self, player_id):
         self.player.get(player_id).board.move_piece(K_SPACE)

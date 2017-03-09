@@ -9,6 +9,10 @@ import Menu
 
 def draw(board, x,y):
     BSURFACE = board.draw_game_board()
+    if cli_player.board.dead:
+        result_screen("lose")
+    elif svr_player.board.dead:
+        result_screen("win")
     SURFACE.blit(BSURFACE,(x,y))
 
 #TODO 告诉服务器退出，服务器应该也要有心跳测试
@@ -27,6 +31,9 @@ def request(opr):
 
 
 def get_board(sock):
+    if cli_player.player_status in [player_status.win, player_status.lose]:
+        return
+
     sock.sendall(request('show'))
     raw = sock.recv(8000)
     raw_recv_data = json.loads(raw.decode('utf-8'))
@@ -37,13 +44,22 @@ def get_board(sock):
             cli_player.board.active_shape.shape = recv_data["active_shape"]
             cli_player.board.active_shape.x = recv_data["x"]
             cli_player.board.active_shape.y = recv_data["y"]
+            cli_player.board.dead = recv_data["dead"]
         else:
             svr_player.board.board = recv_data["board"]
             svr_player.board.active_shape.shape = recv_data["active_shape"]
             svr_player.board.active_shape.x = recv_data["x"]
             svr_player.board.active_shape.y = recv_data["y"]
+            svr_player.board.dead = recv_data["dead"]
+
+        if cli_player.board.dead:
+            cli_player.player_status = player_status.lose
+        if svr_player.board.dead:
+            cli_player.player_status = player_status.win
 
 def send_key_data(sock, data):
+    if cli_player.player_status in [player_status.win, player_status.lose]:
+        return
     sock.send(data)
     get_board(sock)
 
@@ -77,9 +93,17 @@ def menu_screen(menu, sock):
     else:
         menu.matching_screen()
 
-# 匹配画面
-def match_screen():
-    pass
+def result_screen(result):
+    font_color = (0, 0, 255)
+
+    tetris_font = pygame.font.Font("freesansbold.ttf", 64)
+    tetris_font.set_bold(1)
+
+    label_1 = tetris_font.render(result, 1, font_color)
+    label_1_rect = label_1.get_rect()
+    label_1_rect.center = (100,100)
+
+    SURFACE.blit(label_1, label_1_rect)
 
 # 加载这局游戏的基本数据
 def load_basic_info(sock):
