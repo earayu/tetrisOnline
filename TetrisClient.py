@@ -1,7 +1,7 @@
 import socket
 import sys
 from TetrisObject import *
-import json
+import json, threading
 
 
 def draw(board, x,y):
@@ -10,7 +10,7 @@ def draw(board, x,y):
 
 #TODO 告诉服务器退出，服务器应该也要有心跳测试
 def terminate(sock):
-    send_data(sock, request('quit'))
+    send_key_data(sock, request('quit'))
     pygame.quit()
     sys.exit()
 
@@ -37,9 +37,22 @@ def get_board(sock):
             svr_player.board.active_shape.x = recv_data["x"]
             svr_player.board.active_shape.y = recv_data["y"]
 
-def send_data(sock, data):
+def send_key_data(sock, data):
     sock.send(data)
     get_board(sock)
+
+def m(sock):
+    global cli_player, svr_player
+    sock.send(request("match"))
+    cli_player.status = player_status.matching
+    cli_player, svr_player = load_basic_info(sock)
+
+def match(sock):
+    threading.Thread(target=m, args=(sock,)).start()
+
+# 匹配画面
+def match_screen():
+    pass
 
 # 加载这局游戏的基本数据
 def load_basic_info(sock):
@@ -61,7 +74,7 @@ def process_key_event(sock, frames=4):
         pressed_keys = pygame.key.get_pressed()
         if event.type == KEYDOWN:
             if event.key == K_UP:
-                send_data(sock, request('up'))
+                send_key_data(sock, request('up'))
         if pressed_keys[K_LEFT]:
             key_dir = K_LEFT
         if pressed_keys[K_RIGHT]:
@@ -73,22 +86,21 @@ def process_key_event(sock, frames=4):
     if key_dir is not None and frame_count > frames:
         frame_count = 0
         if key_dir == K_LEFT:
-            send_data(sock, request('left'))
+            send_key_data(sock, request('left'))
         if key_dir == K_RIGHT:
-            send_data(sock, request('right'))
+            send_key_data(sock, request('right'))
         if key_dir == K_DOWN:
-            send_data(sock, request('down'))
+            send_key_data(sock, request('down'))
 
 
 HOST, PORT = "localhost", 9999
 
-sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-sock.connect((HOST, PORT))
+# sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+# sock.connect((HOST, PORT))
 
-cli_player, svr_player = load_basic_info(sock) #cli_player为本方,svr_player为对方
-
-sock.send(request("match"))
-cli_player, svr_player = load_basic_info(sock)
+# cli_player, svr_player = load_basic_info(sock) #cli_player为本方,svr_player为对方
+#
+# match(sock)
 
 pygame.init()
 SURFACE = pygame.display.set_mode((WINDOW_WIDTH*2+50,WINDOW_HEIGHT)) #窗口大小
@@ -99,13 +111,26 @@ fpsClock = pygame.time.Clock()
 key_dir = None
 frame_count = 0
 
+import Menu
+
 while True:
-    get_board(sock)
-    process_key_event(sock)
-    draw(cli_player.board,0,0)
-    draw(svr_player.board,280,0)
+
+    # if cli_player.game_id == 0:
+    print("匹配中...")
+    menu = Menu.Menu(SURFACE)
+    menu.draw_menu()
+    menu.update_menu()
+    # menu.draw_info(SURFACE)
+        # menu.update_menu(SURFACE)
+        # continue
+
+
+    # get_board(sock)
+    # process_key_event(sock)
+    # draw(cli_player.board,0,0)
+    # draw(svr_player.board,280,0)
     pygame.display.update()
     fpsClock.tick(FPS)
 
-sock.close()
+# sock.close()
 
