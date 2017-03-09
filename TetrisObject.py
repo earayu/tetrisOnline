@@ -89,6 +89,7 @@ class Board:
     board = None
 
     def __init__(self, width, height):
+        self.dead = False
         self.width, self.height = width, height
         self.calculated_height = self.height * BLOCK_SIZE
         self.calculated_width = self.width * BLOCK_SIZE
@@ -110,7 +111,8 @@ class Board:
         self.pending_shape = Shape()
 
         if self.is_collision():
-            self.reset()
+            self.dead = True
+            # self.reset()
             #TODO 输了
             # self.dispatch_event('on_game_over')
 
@@ -158,7 +160,7 @@ class Board:
     # 还可以更快点，瞬间到底
     def move_bottom(self):
         at_bottom = self.check_bottom() or self.is_collision()
-        while at_bottom is False:
+        while at_bottom is False and self.dead is False:
             at_bottom = self.move_down()
 
     #查看是否出界
@@ -332,9 +334,12 @@ class Game(object):
 
     # 将游戏状态发送给同一局游戏中的所有玩家
     def show(self, player_id):
+        print("show")
         dd = []
         # 遍历map
         for p in self.player.values():
+            if p.board.dead:
+                print(123)
             dd.append(
                 {
                     "player_id":p.player_id,
@@ -369,7 +374,7 @@ class Game(object):
         self.player.get(player_id).board.move_piece(K_RIGHT)
 
     def down(self, player_id):
-        self.player.get(player_id).board.move_piece(K_DOWN)
+        self.player.get(player_id).board.move_down()
 
     def bottom(self, player_id):
         self.player.get(player_id).board.move_piece(K_SPACE)

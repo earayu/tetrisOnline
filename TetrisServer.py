@@ -60,6 +60,7 @@ def read(conn):
     try:
         raw_request_jsons = conn.recv(1024).decode("utf-8")
     except ConnectionResetError as e: #客户端异常退出
+        print(e)
         # 客户端在匹配中异常退出
         for game in pending_game:
             for p in game.player.values():
@@ -87,8 +88,6 @@ def read(conn):
             return
 
         game = playing_games[int(js["game_id"])]
-        if js["opr"] == "show":
-            game.show(player_id)
         if js["opr"] == "up":
             game.up(player_id)
         if js["opr"] == "left":
@@ -99,6 +98,8 @@ def read(conn):
             game.down(player_id)
         if js["opr"] == "bottom":
             game.bottom(player_id)
+        if js["opr"] == "show":
+            game.show(player_id)
 
 #TODO 垃圾实现
 def split_json(str):
@@ -126,7 +127,8 @@ def schedule_move_down(interval=0.02):
             for game in playing_games.values():
                 if game.should_update():
                     for p in game.player.values():
-                        p.board.move_down()
+                        if not p.board.dead:
+                            game.down(p.player_id)
             time.sleep(interval)
     threading.Thread(target=move_down).start()
 
