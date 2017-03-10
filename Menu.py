@@ -169,6 +169,8 @@ class Menu:
 						return "match"
 					elif self.singlePlayer == 1:
 						return "single"
+					elif self.about == 1:
+						return "about"
 
 
 	def move_cursor(self,direction):

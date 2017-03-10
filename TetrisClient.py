@@ -1,5 +1,4 @@
 import socket
-import sys
 from TetrisObject import *
 import json, threading
 import Menu
@@ -70,13 +69,29 @@ def match(sock):
     if cli_player.status == player_status.init:
         threading.Thread(target=m, args=(sock,)).start()
 
-
 def single():
     single_game()
-    pass
+
+# TODO 响应页面
+def about():
+    global f
+    SURFACE.fill(BLACK)
+    center_x = WINDOW_WIDTH
+    center_y = WINDOW_HEIGHT/2
+    show_text("SimHei", 16, "Author: earayu", (255, 255, 255), (center_x,center_y-20) , SURFACE)
+    show_text("SimHei", 16, "E-mail: earayu@gmail.com", (255, 255, 255), (center_x, center_y), SURFACE)
+    show_text("SimHei", 16, "site: https://github.com/earayu/tetrisOnline", (255, 255, 255), (center_x, center_y+20), SURFACE)
+    pygame.display.update()
+    for event in pygame.event.get():
+        if event.type == QUIT:
+            terminate(sock)
+        if event.type == KEYDOWN:
+            if event.key == K_RETURN:
+                f = 0
 
 
 f = 0
+
 # TODO 修改代码
 def menu_screen(menu, sock):
     global f
@@ -87,13 +102,20 @@ def menu_screen(menu, sock):
         f = 1
     elif r == 'single':
         single()
-        f = 1
+        f = 2
+    elif r == 'about':
+        about()
+        f = 3
     elif r == 'terminate':
         terminate(sock)
+
     if f == 0:
         menu.update_menu()
-    else:
+    elif f==1:
         menu.matching_screen()
+    elif f==3:
+        about()
+
 
 
 # 加载这局游戏的基本数据

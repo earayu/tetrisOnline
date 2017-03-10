@@ -13,6 +13,7 @@ FPS = 60
 # 颜色
 WHITE = (255,255,255)
 RED = (255,0,0)
+BLACK = (0,0,0)
 
 #TODO 同步问题
 #正在进行的游戏
@@ -388,18 +389,22 @@ class Game(object):
         self.player.get(player_id).board.move_piece(K_SPACE)
 
 
-#TODO 位置不要写死
-def result_screen(result, screen):
-    font_color = (0, 0, 255)
+def show_text(font, size, text, color, center, screen, bold=0, alias = 1):
+    try:
+        tetris_font = pygame.font.Font(font, size)
+    except:
+        tetris_font = pygame.font.SysFont(font, size)
+    tetris_font.set_bold(bold)
 
-    tetris_font = pygame.font.Font("freesansbold.ttf", 64)
-    tetris_font.set_bold(1)
-
-    label_1 = tetris_font.render(result, 1, font_color)
+    label_1 = tetris_font.render(text, alias, color)
     label_1_rect = label_1.get_rect()
-    label_1_rect.center = (100,100)
+    label_1_rect.center = center
 
     screen.blit(label_1, label_1_rect)
+
+#TODO 位置不要写死
+def result_screen(result, screen):
+    show_text("freesansbold.ttf", 64, result, (0,0,255), (100,100), screen)
 
 
 def _draw2(SURFACE, board, x,y):
