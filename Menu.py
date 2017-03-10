@@ -167,6 +167,8 @@ class Menu:
 				elif event.key in [K_RETURN, K_KP_ENTER]:
 					if self.matchPlayer == 1:
 						return "match"
+					elif self.singlePlayer == 1:
+						return "single"
 
 
 	def move_cursor(self,direction):

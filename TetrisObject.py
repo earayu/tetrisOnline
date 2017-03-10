@@ -1,4 +1,4 @@
-import random, pygame, json, time
+import random, pygame, json, time, sys
 from pygame.locals import *
 from enum import Enum
 
@@ -386,4 +386,100 @@ class Game(object):
 
     def bottom(self, player_id):
         self.player.get(player_id).board.move_piece(K_SPACE)
+
+
+#TODO 位置不要写死
+def result_screen(result, screen):
+    font_color = (0, 0, 255)
+
+    tetris_font = pygame.font.Font("freesansbold.ttf", 64)
+    tetris_font.set_bold(1)
+
+    label_1 = tetris_font.render(result, 1, font_color)
+    label_1_rect = label_1.get_rect()
+    label_1_rect.center = (100,100)
+
+    screen.blit(label_1, label_1_rect)
+
+
+def _draw2(SURFACE, board, x,y):
+    BSURFACE = board.draw_game_board()
+    SURFACE.blit(BSURFACE,(x,y))
+
+#本地的游戏就简单写一下，用了以前的代码
+def single_game():
+    pygame.init()
+    SURFACE = pygame.display.set_mode((WINDOW_WIDTH * 2 + 50, WINDOW_HEIGHT))
+    SURFACE.fill(WHITE)
+    pygame.display.set_caption("俄罗斯方块")
+    fpsClock = pygame.time.Clock()
+
+    board = Board(WIDTH, HEIGHT)
+    game = Game(1)
+    game.game_status = game_status.playing
+
+    board2 = Board(WIDTH, HEIGHT)
+
+    key_dir = None
+    key_dir2 = None
+    frameCount = 0
+    frameCount2 = 0
+
+    while True:
+        frameCount += 1
+        frameCount2 += 1
+
+        for event in pygame.event.get():
+            key_dir = None
+            key_dir2 = None
+
+            if event.type == QUIT:
+                pygame.quit()
+                sys.exit()
+
+            pressed_keys = pygame.key.get_pressed()
+
+            if event.type == KEYDOWN:
+                if event.key == K_UP:
+                    board.move_piece(K_UP)
+                if event.key == K_w:
+                    board2.move_piece(K_UP)
+
+            if pressed_keys[K_LEFT]:
+                key_dir = K_LEFT
+            if pressed_keys[K_a]:
+                key_dir2 = K_a
+            if pressed_keys[K_RIGHT]:
+                key_dir = K_RIGHT
+            if pressed_keys[K_d]:
+                key_dir2 = K_d
+            if pressed_keys[K_DOWN]:
+                key_dir = K_DOWN
+            if pressed_keys[K_s]:
+                key_dir2 = K_s
+
+        if key_dir in [K_LEFT, K_RIGHT, K_DOWN] and frameCount > 4 and not board.dead and not board2.dead:
+            frameCount = 0
+            board.move_piece(key_dir)
+        if key_dir2 in [K_s, K_a, K_d] and frameCount2 > 4 and not board.dead and not board2.dead:
+            frameCount2 = 0
+            board2.move_piece(key_dir2)
+
+        _draw2(SURFACE, board, 0, 0)
+        _draw2(SURFACE, board2, 280, 0)
+
+        # 每隔一定帧数下降一格
+        if game.should_update() and not board.dead and not board2.dead:
+            board.move_down()
+            board2.move_down()
+
+        if board.dead:
+            result_screen("lose", SURFACE)
+        if board2.dead:
+            result_screen("win", SURFACE)
+
+        # 渲染一帧
+        pygame.display.update()
+
+        fpsClock.tick(FPS)
 

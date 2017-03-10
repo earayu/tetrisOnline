@@ -60,7 +60,6 @@ def read(conn):
     try:
         raw_request_jsons = conn.recv(1024).decode("utf-8")
     except ConnectionResetError as e: #客户端异常退出
-        print(e)
         # 客户端在匹配中异常退出
         for game in pending_game:
             for p in game.player.values():
@@ -71,7 +70,6 @@ def read(conn):
         return
 
     request_jsons = split_json(raw_request_jsons) #TODO 很奇怪，要改成一次只发送1个json吗
-    print(request_jsons)
     for j in request_jsons:
         js = json.loads(j)
 
