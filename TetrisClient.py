@@ -29,6 +29,7 @@ def get_board(sock):
 
     sock.sendall(request('show'))
     raw = sock.recv(8000)
+    print(raw)
     raw_recv_data = json.loads(raw.decode('utf-8'))
     # TODO 支持更多人游戏，要按照player_id分离json
     for recv_data in raw_recv_data:
@@ -121,7 +122,6 @@ def menu_screen(menu, sock):
 # 加载这局游戏的基本数据
 def load_basic_info(sock):
     game_info_json = json.loads(sock.recv(1024).decode('utf-8'))
-    print(game_info_json)
     game_id = game_info_json["game_id"]
     player_id = int(game_info_json["player_id"])
     status = player_status[game_info_json["player_status"]]
@@ -165,8 +165,8 @@ def process_key_event(sock, frames=4):
             send_key_data(sock, request('down'))
 
 
-
-HOST, PORT = "localhost", 9999
+# 123.206.180.79   192.168.130.128
+HOST, PORT = "127.0.0.1", 9999
 
 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 sock.connect((HOST, PORT))
@@ -184,14 +184,17 @@ frame_count = 0
 
 menu = Menu.Menu(SURFACE)
 
-while True:
+a = 0
 
+while True:
+    a += 1
     if cli_player.player_status in [player_status.init, player_status.matching]:
         menu_screen(menu, sock)
         continue
-
     SURFACE.fill(WHITE)
-    get_board(sock)
+    if a > 10:
+        get_board(sock)
+        a = 0
     process_key_event(sock)
     draw(cli_player.board,0,0)
     draw(svr_player.board,280,0)

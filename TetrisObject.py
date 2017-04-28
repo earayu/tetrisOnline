@@ -259,8 +259,10 @@ class Board:
 
     def draw_block(self, surface, x, y):
         y += 1
-        rect = pygame.Rect(x * BLOCK_SIZE, y * BLOCK_SIZE, BLOCK_SIZE,BLOCK_SIZE)
-        pygame.draw.rect(surface,RED,rect)
+        pic = pygame.image.load("block.png")
+        surface.blit(pic,(x * BLOCK_SIZE, y * BLOCK_SIZE))
+        # rect = pygame.Rect(x * BLOCK_SIZE, y * BLOCK_SIZE, BLOCK_SIZE,BLOCK_SIZE)
+        # pygame.draw.rect(surface,RED,rect)
 
 
 # 玩家状态:init(建立和服务器的链接)  -> matching(正在匹配)  ->  playing  ->  win/lose   ->quit
