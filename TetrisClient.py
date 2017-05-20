@@ -19,7 +19,9 @@ def terminate(sock):
 
 
 def request(opr):
-    data = '{"game_id":"' + str(cli_player.game_id) + '","player_id":"' + str(cli_player.player_id) + '","opr":"' + opr + '"}'
+    data = '{"game_id":"%s","player_id":"%s","opr":"%s","username":"%s"}' \
+           % (str(cli_player.game_id), str(cli_player.player_id), opr, cli_player.username)
+    # data = '{"game_id":"' + str(cli_player.game_id) + '","player_id":"' + str(cli_player.player_id) + '","opr":"' + opr + '"}'
     return data.encode('utf-8')
 
 
@@ -120,13 +122,13 @@ def menu_screen(menu, sock):
 
 
 # 加载这局游戏的基本数据
-def load_basic_info(sock):
+def load_basic_info(sock):#TODO 代码冗余
     game_info_json = json.loads(sock.recv(1024).decode('utf-8'))
     game_id = game_info_json["game_id"]
     player_id = int(game_info_json["player_id"])
-    status = player_status[game_info_json["player_status"]]
     c,s = Player(game_id, player_id, sock, Board(16,28)),Player(game_id, player_id, sock, Board(16,28)) #TODO board参数
-    c.player_status = status
+    c.player_status = player_status[game_info_json["player_status"]]
+    c.set_username(USERNAME)
     return c,s
 
 # 每隔4帧数处理一次
@@ -164,6 +166,7 @@ def process_key_event(sock, frames=4):
         elif key_dir == K_DOWN:
             send_key_data(sock, request('down'))
 
+USERNAME = 'earayu'
 
 # 123.206.180.79   192.168.130.128
 HOST, PORT = "127.0.0.1", 9999

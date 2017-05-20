@@ -152,17 +152,17 @@ class Board:
 
         if self.check_bottom() or self.is_collision():
             self.active_shape.y -= 1
-            # 着陆
-            self.shape_to_board()
+            # 着陆y
+            n = self.shape_to_board()
             self.add_shape()
-            return False
-        return True
+            return (False, n)
+        return (True, 0)
 
     # 还可以更快点，瞬间到底
     def move_bottom(self):
         at_bottom = self.check_bottom() or self.is_collision()
         while at_bottom is False and self.dead is False:
-            at_bottom = self.move_down()
+            at_bottom = self.move_down()[0]
 
     #查看是否出界
     def out_of_bounds(self, shape=None):
@@ -190,7 +190,7 @@ class Board:
                     return True
         return False
 
-    #
+    #测试每一行是否被填满
     def test_for_line(self):
         for y in range(self.height - 1, -1, -1):
             counter = 0
@@ -202,6 +202,7 @@ class Board:
                 return True
         return False
 
+    #删除第Y行
     def process_line(self, y_to_remove):
         for y in range(y_to_remove - 1, -1, -1):
             for x in range(self.width):
@@ -218,6 +219,7 @@ class Board:
         lines_found = 0
         while self.test_for_line():
             lines_found += 1
+        return lines_found
 
     def move_piece(self, motion_state):
         if motion_state == K_LEFT:
@@ -274,7 +276,6 @@ class Player:
     player_id = 0
     conn = None
     board = None
-    score = 0
 
     def __init__(self, game_id, player_id, conn, board):
         self.game_id = game_id
@@ -282,9 +283,14 @@ class Player:
         self.conn = conn
         self.board = board
         self.status = player_status.init
+        self.username = None
+        self.score = 0
 
+    def set_username(self, username):
+        self.username = username
 
-
+    def add_score(self,n):
+        self.score += n
 
 class Game(object):
     game_id = 0
@@ -294,6 +300,10 @@ class Game(object):
     is_paused = False
     starting_level = 1
     level = 1
+    # start_time
+    # end_time
+    # score1
+    # score2
 
     def __init__(self, starting_level=1):
         self.game_status = game_status.init
@@ -318,12 +328,6 @@ class Game(object):
         return False
 
 
-
-    # # 添加一个玩家进入这局游戏
-    # def add_player(self, conn):
-    #     # TODO 暂时把socket fd当作player_id, Board最后也要改掉
-    #     self.player[conn.fileno()] = Player(self.game_id, conn.fileno(), conn, Board(16,28))
-
     def has_player_id(self, player_id):
         return self.player.get(player_id) is not None
 
@@ -337,15 +341,13 @@ class Game(object):
 
     # 将游戏状态发送给同一局游戏中的所有玩家
     def show(self, player_id):
-        print("show")
         dd = []
         # 遍历map
         for p in self.player.values():
-            if p.board.dead:
-                print(123)
             dd.append(
                 {
                     "player_id":p.player_id,
+                    "score":p.score,
                     "board": p.board.board,
                     "active_shape": p.board.active_shape.shape,
                     "x": p.board.active_shape.x,
@@ -379,16 +381,23 @@ class Game(object):
         self.player.get(player_id).board.move_right()
 
     def down(self, player_id):
-        b = self.player.get(player_id).board
-        b.move_down()
+        player = self.player.get(player_id)
+        b = player.board
+        n = b.move_down()[1]
         if b.dead:
             playing_games.pop(self.game_id)
             self.game_status = game_status.finish
             for p in self.player.values():
                 p.player_status = player_status.lose if p.player_id == player_id else player_status.win #python 3元表达式
+        elif n > 0:
+            player.add_score(n)
+
 
     def bottom(self, player_id):
-        self.player.get(player_id).board.move_piece(K_SPACE)
+        player = self.player.get(player_id)
+        n = self.player.get(player_id).board.move_down()[1]
+        if n > 0:
+            player.add_score(n)
 
 
 def show_text(font, size, text, color, center, screen, bold=0, alias = 1):

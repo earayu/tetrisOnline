@@ -31,13 +31,13 @@ def accept(s):
     send_info(0, player_id, conn, player_status="init") #给刚建立连接的玩家发送的game_id为0
 
 # 匹配游戏，2种情况：能匹配到；不能匹配到，等待下一个玩家
-def match(conn, player_id):
+def match(conn, player_id):#TODO conn.fileno()就是player_id
     if len(pending_game) == 0:
         pending_game.append(Game(1))
 
     game = pending_game[0]
 
-    if game.has_player_id(player_id):#客户端重复发送匹配请求（当然我在客户端做了处理，我自己的程序是无法重复发送请求的）
+    if game.has_player_id(player_id):#客户端重复发送匹配请求
         return
 
     player = get_init_player(conn.fileno())
@@ -72,6 +72,7 @@ def read(conn):
     request_jsons = split_json(raw_request_jsons) #TODO 很奇怪，要改成一次只发送1个json吗
     for j in request_jsons:
         js = json.loads(j)
+        print(js)
 
         player_id = int(js["player_id"])
         if js["opr"] == "match":
