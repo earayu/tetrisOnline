@@ -4,12 +4,20 @@ import json, threading
 import Menu
 
 
+def finish_game():
+    global FINISH
+    if FINISH is False:
+        sock.send(request("finish"))
+        FINISH = True
+
 def draw(board, x,y):
     BSURFACE = board.draw_game_board()
     if cli_player.board.dead:
         result_screen("lose", SURFACE)
+        finish_game()
     elif svr_player.board.dead:
         result_screen("win", SURFACE)
+        finish_game()
     SURFACE.blit(BSURFACE,(x,y))
 
 def terminate(sock):
@@ -41,12 +49,14 @@ def get_board(sock):
             cli_player.board.active_shape.x = recv_data["x"]
             cli_player.board.active_shape.y = recv_data["y"]
             cli_player.board.dead = recv_data["dead"]
+            cli_player.board.username = recv_data["username"]
         else:
             svr_player.board.board = recv_data["board"]
             svr_player.board.active_shape.shape = recv_data["active_shape"]
             svr_player.board.active_shape.x = recv_data["x"]
             svr_player.board.active_shape.y = recv_data["y"]
             svr_player.board.dead = recv_data["dead"]
+            svr_player.board.username = recv_data["username"]
 
         if cli_player.board.dead:
             cli_player.player_status = player_status.lose
@@ -128,7 +138,8 @@ def load_basic_info(sock):#TODO 代码冗余
     player_id = int(game_info_json["player_id"])
     c,s = Player(game_id, player_id, sock, Board(16,28)),Player(game_id, player_id, sock, Board(16,28)) #TODO board参数
     c.player_status = player_status[game_info_json["player_status"]]
-    c.set_username(USERNAME)
+    if c.username is None:
+        c.set_username(USERNAME)
     return c,s
 
 # 每隔4帧数处理一次
@@ -166,7 +177,8 @@ def process_key_event(sock, frames=4):
         elif key_dir == K_DOWN:
             send_key_data(sock, request('down'))
 
-USERNAME = 'earayu'
+USERNAME = input('username:')
+FINISH = False
 
 # 123.206.180.79   192.168.130.128
 HOST, PORT = "127.0.0.1", 9999
@@ -195,7 +207,7 @@ while True:
         menu_screen(menu, sock)
         continue
     SURFACE.fill(WHITE)
-    if a > 10:
+    if a > 30:
         get_board(sock)
         a = 0
     process_key_event(sock)

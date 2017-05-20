@@ -27,6 +27,7 @@ def accept(s):
     player_id = conn.fileno()
     #TODO 并不是每个玩家都要加入init_player。单机玩的就可以不要。当然单机玩也可以通过init_player获取数据
     init_player[player_id] = Player(0, player_id, conn, Board(16, 28))
+    all_players[player_id] = init_player[player_id]
 
     send_info(0, player_id, conn, player_status="init") #给刚建立连接的玩家发送的game_id为0
 
@@ -58,7 +59,7 @@ def match(conn, player_id):#TODO conn.fileno()就是player_id
 
 def read(conn):
     try:
-        raw_request_jsons = conn.recv(1024).decode("utf-8")
+        raw_request_jsons = conn.recv(8000).decode("utf-8")
     except ConnectionResetError as e: #客户端异常退出
         # 客户端在匹配中异常退出
         for game in pending_game:
@@ -71,10 +72,15 @@ def read(conn):
 
     request_jsons = split_json(raw_request_jsons) #TODO 很奇怪，要改成一次只发送1个json吗
     for j in request_jsons:
+        print(j)
         js = json.loads(j)
         print(js)
 
         player_id = int(js["player_id"])
+
+        if all_players[player_id].username is None:
+            all_players[player_id].set_username(js["username"])
+
         if js["opr"] == "match":
             match(conn, player_id)
             continue
@@ -99,6 +105,13 @@ def read(conn):
             game.bottom(player_id)
         if js["opr"] == "show":
             game.show(player_id)
+        if js["opr"] == "finish":
+            if game.game_id in playing_games:
+                playing_games.pop(game.game_id)
+                game.game_status = game_status.finish
+                game.end_time = now()
+                import persistence
+                persistence.add_game(game)
 
 #TODO 垃圾实现
 def split_json(str):

@@ -1,6 +1,7 @@
 import random, pygame, json, time, sys
 from pygame.locals import *
 from enum import Enum
+from persistence import *
 
 
 # 游戏基本设置
@@ -20,6 +21,7 @@ BLACK = (0,0,0)
 playing_games = {}
 #刚建立连接，还没开始游戏的玩家
 init_player = {}
+all_players = {}
 #正在匹配中的游戏
 pending_game = []
 
@@ -300,10 +302,7 @@ class Game(object):
     is_paused = False
     starting_level = 1
     level = 1
-    # start_time
-    # end_time
-    # score1
-    # score2
+
 
     def __init__(self, starting_level=1):
         self.game_status = game_status.init
@@ -311,6 +310,8 @@ class Game(object):
         self.player = {}
         self.starting_level = int(starting_level)
         self.reset()
+        self.start_time = now()
+        self.end_time = None
 
     def reset(self):
         self.level = self.starting_level
@@ -347,12 +348,13 @@ class Game(object):
             dd.append(
                 {
                     "player_id":p.player_id,
+                    "username":p.username,
                     "score":p.score,
                     "board": p.board.board,
-                    "active_shape": p.board.active_shape.shape,
                     "x": p.board.active_shape.x,
                     "y": p.board.active_shape.y,
-                    "dead": p.board.dead
+                    "dead": p.board.dead,
+                    "active_shape": p.board.active_shape.shape
                 }
             )
 
@@ -385,8 +387,9 @@ class Game(object):
         b = player.board
         n = b.move_down()[1]
         if b.dead:
-            playing_games.pop(self.game_id)
-            self.game_status = game_status.finish
+            # playing_games.pop(self.game_id)
+            # self.game_status = game_status.finish
+            #TODO 这个要放到finish那边嘛
             for p in self.player.values():
                 p.player_status = player_status.lose if p.player_id == player_id else player_status.win #python 3元表达式
         elif n > 0:
