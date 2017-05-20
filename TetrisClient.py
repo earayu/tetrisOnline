@@ -4,6 +4,24 @@ import json, threading
 import Menu
 
 
+def restart():
+    global cli_player, svr_player, FINISH
+    FINISH = True
+    sock.send(request('restart'))
+    #TODO
+
+
+def finish_wait():
+    global FINISH
+    if FINISH is True:
+        for event in pygame.event.get():
+            if event.type == QUIT:
+                terminate(sock)
+            if event.type == KEYDOWN:
+                if event.key == K_RETURN:
+                    restart()
+
+
 def finish_game():
     global FINISH
     if FINISH is False:
@@ -30,6 +48,7 @@ def request(opr):
     data = '{"game_id":"%s","player_id":"%s","opr":"%s","username":"%s"}' \
            % (str(cli_player.game_id), str(cli_player.player_id), opr, cli_player.username)
     # data = '{"game_id":"' + str(cli_player.game_id) + '","player_id":"' + str(cli_player.player_id) + '","opr":"' + opr + '"}'
+    print(data)
     return data.encode('utf-8')
 
 
@@ -39,7 +58,6 @@ def get_board(sock):
 
     sock.sendall(request('show'))
     raw = sock.recv(8000)
-    print(raw)
     raw_recv_data = json.loads(raw.decode('utf-8'))
     # TODO 支持更多人游戏，要按照player_id分离json
     for recv_data in raw_recv_data:
@@ -207,12 +225,13 @@ while True:
         menu_screen(menu, sock)
         continue
     SURFACE.fill(WHITE)
-    if a > 30:
+    if a > 10:
         get_board(sock)
         a = 0
     process_key_event(sock)
     draw(cli_player.board,0,0)
     draw(svr_player.board,280,0)
+    finish_wait()
     pygame.display.update()
     fpsClock.tick(FPS)
 

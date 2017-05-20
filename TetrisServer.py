@@ -101,17 +101,12 @@ def read(conn):
             game.right(player_id)
         if js["opr"] == "down":
             game.down(player_id)
-        if js["opr"] == "bottom":
-            game.bottom(player_id)
         if js["opr"] == "show":
             game.show(player_id)
+        if js["opr"] == "bottom":
+            game.down(player_id)
         if js["opr"] == "finish":
-            if game.game_id in playing_games:
-                playing_games.pop(game.game_id)
-                game.game_status = game_status.finish
-                game.end_time = now()
-                import persistence
-                persistence.add_game(game)
+            game.finish()
 
 #TODO 垃圾实现
 def split_json(str):

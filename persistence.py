@@ -36,7 +36,9 @@ def add_game(game):
     player1,player2 = game.player.values()
     sql = 'INSERT INTO game (game_id,start_time,end_time,player1,player2,player1_score,player2_score) ' \
           'VALUES (%s,%s,%s,%s,%s,%s,%s)'
-    args = (game.game_id,game.start_time,game.end_time,player1.username,player2.username,player1.score,player2.score)
-    execute(sql=sql,args=args)
+    ssql = 'SELECT * FROM game WHERE game_id=%s'
+    if select(sql=ssql, args=game.game_id) is None:
+        args = (game.game_id,game.start_time,game.end_time,player1.username,player2.username,player1.score,player2.score)
+        execute(sql=sql,args=args)
 
 

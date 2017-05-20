@@ -18,7 +18,7 @@ BLACK = (0,0,0)
 
 #TODO 同步问题
 #正在进行的游戏
-playing_games = {}
+playing_games = {}#TODO 结束后没删除
 #刚建立连接，还没开始游戏的玩家
 init_player = {}
 all_players = {}
@@ -241,7 +241,7 @@ class Board:
         elif motion_state == K_a:
             self.move_left()
         elif motion_state == K_SPACE:
-            self.move_bottom()
+            self.move_down()
 
     def draw_game_board(self):
         bsurface = pygame.Surface((WINDOW_WIDTH,WINDOW_HEIGHT))
@@ -363,6 +363,12 @@ class Game(object):
             if p.player_id == player_id:
                 p.conn.send(data)
 
+    def finish(self):
+        if self.game_id in playing_games:
+            # playing_games.pop(self.game_id)
+            import persistence
+            persistence.add_game(self)
+
     # TODO 有一个玩家退出游戏
     def quit(self, player_id):
         self.get_player(player_id).status = player_status.quit
@@ -387,20 +393,17 @@ class Game(object):
         b = player.board
         n = b.move_down()[1]
         if b.dead:
-            # playing_games.pop(self.game_id)
-            # self.game_status = game_status.finish
-            #TODO 这个要放到finish那边嘛
-            for p in self.player.values():
-                p.player_status = player_status.lose if p.player_id == player_id else player_status.win #python 3元表达式
+            self.one_player_dead(player_id)
         elif n > 0:
             player.add_score(n)
 
+    def one_player_dead(self, player_id):
+        self.game_status = game_status.finish
+        self.end_time = now()
+        for p in self.player.values():
+            p.player_status = player_status.lose if p.player_id == player_id else player_status.win  # python 3元表达式
 
-    def bottom(self, player_id):
-        player = self.player.get(player_id)
-        n = self.player.get(player_id).board.move_down()[1]
-        if n > 0:
-            player.add_score(n)
+
 
 
 def show_text(font, size, text, color, center, screen, bold=0, alias = 1):
