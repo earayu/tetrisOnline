@@ -5,10 +5,13 @@ import Menu
 
 
 def restart():
-    global cli_player, svr_player, FINISH
-    FINISH = True
+    global cli_player, svr_player, FINISH, key_dir, frame_count, f
+    FINISH = False
     sock.send(request('restart'))
-    #TODO
+    cli_player,svr_player = load_basic_info(sock)
+    key_dir = None
+    frame_count = 0
+    f = 0
 
 
 def finish_wait():
@@ -90,7 +93,7 @@ def send_key_data(sock, data):
 def m(sock):
     global cli_player, svr_player
     sock.send(request("match"))
-    cli_player.status = player_status.matching
+    # cli_player.status = player_status.matching
     cli_player, svr_player = load_basic_info(sock)
     # 第一个玩家遇到matching状态,需要再等待一个playing状态
     if cli_player.player_status == player_status.matching:
@@ -151,7 +154,9 @@ def menu_screen(menu, sock):
 
 # 加载这局游戏的基本数据
 def load_basic_info(sock):#TODO 代码冗余
-    game_info_json = json.loads(sock.recv(1024).decode('utf-8'))
+    sss = sock.recv(1024).decode('utf-8')
+    print(sss)
+    game_info_json = json.loads(sss)
     game_id = game_info_json["game_id"]
     player_id = int(game_info_json["player_id"])
     c,s = Player(game_id, player_id, sock, Board(16,28)),Player(game_id, player_id, sock, Board(16,28)) #TODO board参数
@@ -203,7 +208,6 @@ HOST, PORT = "127.0.0.1", 9999
 
 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 sock.connect((HOST, PORT))
-
 cli_player, svr_player = load_basic_info(sock) #cli_player为本方,svr_player为对方
 
 pygame.init()

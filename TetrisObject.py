@@ -10,7 +10,7 @@ HEIGHT = 28
 BLOCK_SIZE = 15
 WINDOW_WIDTH = WIDTH*BLOCK_SIZE
 WINDOW_HEIGHT = HEIGHT*BLOCK_SIZE
-FPS = 60
+FPS = 30
 # 颜色
 WHITE = (255,255,255)
 RED = (255,0,0)
@@ -106,6 +106,8 @@ class Board:
 
         self.pending_shape = Shape()
         self.add_shape()
+        self.dead = False
+
 
     def add_shape(self):
         self.active_shape = self.pending_shape.clone()
@@ -288,6 +290,12 @@ class Player:
         self.username = None
         self.score = 0
 
+    def reset(self):
+        self.game_id = 0
+        self.board.reset()
+        self.status = player_status.init
+        self.score = 0
+
     def set_username(self, username):
         self.username = username
 
@@ -314,7 +322,16 @@ class Game(object):
         self.end_time = None
 
     def reset(self):
+        self.game_status = game_status.init
+        self.game_id = int(time.time() * 1000000)
+        self.reset_players()
         self.level = self.starting_level
+        self.start_time = now()
+        self.end_time = None
+
+    def reset_players(self):
+        for p in self.player:
+            p.reset(self.game_id)
 
     #TODO 引入游戏状态, len(self.player)<2这行代码改掉
     def should_update(self):

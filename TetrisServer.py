@@ -17,6 +17,7 @@ def send_info(game_id, player_id, conn, player_status):
         "player_status":player_status
     }
     conn.send(json.dumps(data).encode('utf-8'))
+    print(json.dumps(data).encode('utf-8'))
 
 
 def accept(s):
@@ -30,6 +31,7 @@ def accept(s):
     all_players[player_id] = init_player[player_id]
 
     send_info(0, player_id, conn, player_status="init") #给刚建立连接的玩家发送的game_id为0
+
 
 # 匹配游戏，2种情况：能匹配到；不能匹配到，等待下一个玩家
 def match(conn, player_id):#TODO conn.fileno()就是player_id
@@ -72,9 +74,7 @@ def read(conn):
 
     request_jsons = split_json(raw_request_jsons) #TODO 很奇怪，要改成一次只发送1个json吗
     for j in request_jsons:
-        print(j)
         js = json.loads(j)
-        print(js)
 
         player_id = int(js["player_id"])
 
@@ -92,6 +92,8 @@ def read(conn):
                     conn.close()
             return
 
+
+
         game = playing_games[int(js["game_id"])]
         if js["opr"] == "up":
             game.up(player_id)
@@ -107,6 +109,16 @@ def read(conn):
             game.down(player_id)
         if js["opr"] == "finish":
             game.finish()
+        if js["opr"] == "restart":
+            reset(game,player_id)
+
+
+def reset(game,player_id):
+    p = game.player[player_id]
+    p.reset()
+    init_player[p.player_id] = p
+    send_info(0, p.player_id, p.conn, player_status="init")
+
 
 #TODO 垃圾实现
 def split_json(str):
