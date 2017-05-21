@@ -16,8 +16,7 @@ def send_info(game_id, player_id, conn, player_status):
         "player_id": player_id,
         "player_status":player_status
     }
-    conn.send(json.dumps(data).encode('utf-8'))
-    print(json.dumps(data).encode('utf-8'))
+    conn.send(zlib.compress(json.dumps(data).encode('utf-8')))
 
 
 def accept(s):

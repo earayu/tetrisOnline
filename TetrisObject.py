@@ -2,6 +2,7 @@ import random, pygame, json, time, sys
 from pygame.locals import *
 from enum import Enum
 from persistence import *
+import zlib
 
 # 游戏基本设置
 WIDTH = 16
@@ -393,7 +394,7 @@ class Game(object):
         data = json.dumps(dd).encode('utf-8')
         for p in self.player.values():
             if p.player_id == player_id:
-                p.conn.send(data)
+                p.conn.send(zlib.compress(data))
 
     def finish(self):
         if self.game_id in playing_games:

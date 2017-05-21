@@ -60,7 +60,7 @@ def get_board(sock):
         return
 
     sock.sendall(request('show'))
-    raw = sock.recv(18000)
+    raw = zlib.decompress(sock.recv(18000))
     print(raw)
     raw_recv_data = json.loads(raw.decode('utf-8'))
     # TODO 支持更多人游戏，要按照player_id分离json
@@ -156,7 +156,7 @@ def menu_screen(menu, sock):
 
 # 加载这局游戏的基本数据
 def load_basic_info(sock):#TODO 代码冗余
-    sss = sock.recv(1024).decode('utf-8')
+    sss = zlib.decompress(sock.recv(1024)).decode('utf-8')
     print(sss)
     game_info_json = json.loads(sss)
     game_id = game_info_json["game_id"]
