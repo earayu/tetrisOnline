@@ -3,28 +3,27 @@ from pygame.locals import *
 from enum import Enum
 from persistence import *
 
-
-
 # 游戏基本设置
 WIDTH = 16
 HEIGHT = 28
 BLOCK_SIZE = 15
-WINDOW_WIDTH = WIDTH*BLOCK_SIZE
-WINDOW_HEIGHT = HEIGHT*BLOCK_SIZE
+WINDOW_WIDTH = WIDTH * BLOCK_SIZE
+WINDOW_HEIGHT = HEIGHT * BLOCK_SIZE
 FPS = 30
 # 颜色
-WHITE = (255,255,255)
-RED = (255,0,0)
-BLACK = (0,0,0)
+WHITE = (255, 255, 255)
+RED = (255, 0, 0)
+BLACK = (0, 0, 0)
 
-#TODO 同步问题
-#正在进行的游戏
-playing_games = {}#TODO 结束后没删除
-#刚建立连接，还没开始游戏的玩家
+# TODO 同步问题
+# 正在进行的游戏
+playing_games = {}  # TODO 结束后没删除
+# 刚建立连接，还没开始游戏的玩家
 init_player = {}
 all_players = {}
-#正在匹配中的游戏
+# 正在匹配中的游戏
 pending_game = []
+
 
 class Shape(object):
     _shapes = [
@@ -33,7 +32,7 @@ class Shape(object):
         [[0, 0, 0, 0], [0, 1, 0, 0], [1, 1, 1, 0], [0, 0, 0, 0]],
         [[0, 0, 0, 0], [0, 0, 1, 0], [0, 0, 1, 0], [0, 1, 1, 0]],
         [[0, 0, 0, 0], [0, 0, 1, 0], [0, 1, 1, 0], [0, 1, 0, 0]],
-        [[0, 0, 0, 0], [0, 1, 0, 0], [0, 1, 1, 0], [0, 0, 1, 0]],]
+        [[0, 0, 0, 0], [0, 1, 0, 0], [0, 1, 1, 0], [0, 0, 1, 0]], ]
 
     def __init__(self, x=0, y=0):
         self.shape = random.choice(self._shapes)
@@ -109,7 +108,6 @@ class Board:
         self.add_shape()
         self.dead = False
 
-
     def add_shape(self):
         self.active_shape = self.pending_shape.clone()
         self.active_shape.x = self.width // 2 - self.active_shape.left_edge
@@ -119,7 +117,7 @@ class Board:
         if self.is_collision():
             self.dead = True
             # self.reset()
-            #TODO 输了
+            # TODO 输了
             # self.dispatch_event('on_game_over')
 
     # 旋转方块，S和Z形方块好像有点问题，旋转位置不对。需要碰撞检测，查看能否旋转
@@ -169,7 +167,7 @@ class Board:
         while at_bottom is False and self.dead is False:
             at_bottom = self.move_down()[0]
 
-    #查看是否出界
+    # 查看是否出界
     def out_of_bounds(self, shape=None):
         shape = shape or self.active_shape
         if shape.x + shape.left_edge < 0:
@@ -195,7 +193,7 @@ class Board:
                     return True
         return False
 
-    #测试每一行是否被填满
+    # 测试每一行是否被填满
     def test_for_line(self):
         for y in range(self.height - 1, -1, -1):
             counter = 0
@@ -207,7 +205,7 @@ class Board:
                 return True
         return False
 
-    #删除第Y行
+    # 删除第Y行
     def process_line(self, y_to_remove):
         for y in range(y_to_remove - 1, -1, -1):
             for x in range(self.width):
@@ -225,6 +223,19 @@ class Board:
         while self.test_for_line():
             lines_found += 1
         return lines_found
+
+    def add_bottom(self, n):
+        for _ in range(n):
+            self.board = self.board[1:]
+
+            def get_bottom():
+                import random
+                btm = [random.randint(0, 1) for x in range(self.width)]
+                while sum(btm) >= self.width * 0.7 or sum(btm) <= self.width * 0.3:
+                    btm = [random.randint(0, 1) for x in range(self.width)]
+                return btm
+
+            self.board.append(get_bottom())
 
     def move_piece(self, motion_state):
         if motion_state == K_LEFT:
@@ -247,7 +258,7 @@ class Board:
             self.move_down()
 
     def draw_game_board(self):
-        bsurface = pygame.Surface((WINDOW_WIDTH,WINDOW_HEIGHT))
+        bsurface = pygame.Surface((WINDOW_WIDTH, WINDOW_HEIGHT))
 
         for y, row in enumerate(self.board):
             for x, col in enumerate(row):
@@ -263,11 +274,10 @@ class Board:
 
         return bsurface
 
-
     def draw_block(self, surface, x, y):
         y += 1
         pic = pygame.image.load("block.png")
-        surface.blit(pic,(x * BLOCK_SIZE, y * BLOCK_SIZE))
+        surface.blit(pic, (x * BLOCK_SIZE, y * BLOCK_SIZE))
         # rect = pygame.Rect(x * BLOCK_SIZE, y * BLOCK_SIZE, BLOCK_SIZE,BLOCK_SIZE)
         # pygame.draw.rect(surface,RED,rect)
 
@@ -275,6 +285,7 @@ class Board:
 # 玩家状态:init(建立和服务器的链接)  -> matching(正在匹配)  ->  playing  ->  win/lose   ->quit
 player_status = Enum("player_status", ("init", "matching", "playing", "win", "lose", "quit"))
 game_status = Enum("game_status", ("init", "matching", "playing", "finish"))
+
 
 class Player:
     game_id = 0
@@ -300,8 +311,13 @@ class Player:
     def set_username(self, username):
         self.username = username
 
-    def add_score(self,n):
+    def add_score(self, n):
         self.score += n
+
+    # 在底部添加n行方块
+    def add_bottom(self, n):
+        self.board.add_bottom(n)
+
 
 class Game(object):
     game_id = 0
@@ -312,10 +328,9 @@ class Game(object):
     starting_level = 1
     level = 1
 
-
     def __init__(self, starting_level=1):
         self.game_status = game_status.init
-        self.game_id = int(time.time()*1000000)
+        self.game_id = int(time.time() * 1000000)
         self.player = {}
         self.starting_level = int(starting_level)
         self.reset()
@@ -334,7 +349,7 @@ class Game(object):
         for p in self.player:
             p.reset(self.game_id)
 
-    #TODO 引入游戏状态, len(self.player)<2这行代码改掉
+    # TODO 引入游戏状态, len(self.player)<2这行代码改掉
     def should_update(self):
         if self.is_paused or self.game_status != game_status.playing:
             return False
@@ -345,7 +360,6 @@ class Game(object):
             self.ticks = 0
             return True
         return False
-
 
     def has_player_id(self, player_id):
         return self.player.get(player_id) is not None
@@ -365,9 +379,9 @@ class Game(object):
         for p in self.player.values():
             dd.append(
                 {
-                    "player_id":p.player_id,
-                    "username":p.username,
-                    "score":p.score,
+                    "player_id": p.player_id,
+                    "username": p.username,
+                    "score": p.score,
                     "board": p.board.board,
                     "x": p.board.active_shape.x,
                     "y": p.board.active_shape.y,
@@ -392,9 +406,8 @@ class Game(object):
         self.get_player(player_id).status = player_status.quit
         if len(self.player) == 1:
             pending_game.pop(self)
-        # elif len(self.player) == 2:
-        # TODO 另一方胜利
-
+            # elif len(self.player) == 2:
+            # TODO 另一方胜利
 
     # 响应相应玩家的操作
     def up(self, player_id):
@@ -414,6 +427,9 @@ class Game(object):
             self.one_player_dead(player_id)
         elif n > 0:
             player.add_score(n)
+            a, b = self.player.values()
+            another_player = a if a is not player else b
+            another_player.add_bottom(n)
 
     def one_player_dead(self, player_id):
         self.game_status = game_status.finish
@@ -422,9 +438,7 @@ class Game(object):
             p.player_status = player_status.lose if p.player_id == player_id else player_status.win  # python 3元表达式
 
 
-
-
-def show_text(font, size, text, color, center, screen, bold=0, alias = 1):
+def show_text(font, size, text, color, center, screen, bold=0, alias=1):
     try:
         tetris_font = pygame.font.Font(font, size)
     except:
@@ -437,16 +451,18 @@ def show_text(font, size, text, color, center, screen, bold=0, alias = 1):
 
     screen.blit(label_1, label_1_rect)
 
-#TODO 位置不要写死
+
+# TODO 位置不要写死
 def result_screen(result, screen):
-    show_text("freesansbold.ttf", 64, result, (0,0,255), (100,100), screen)
+    show_text("freesansbold.ttf", 64, result, (0, 0, 255), (100, 100), screen)
 
 
-def _draw2(SURFACE, board, x,y):
+def _draw2(SURFACE, board, x, y):
     BSURFACE = board.draw_game_board()
-    SURFACE.blit(BSURFACE,(x,y))
+    SURFACE.blit(BSURFACE, (x, y))
 
-#本地的游戏就简单写一下，用了以前的代码
+
+# 本地的游戏就简单写一下，用了以前的代码
 def single_game():
     pygame.init()
     SURFACE = pygame.display.set_mode((WINDOW_WIDTH * 2 + 50, WINDOW_HEIGHT))
@@ -457,7 +473,7 @@ def single_game():
     board = Board(WIDTH, HEIGHT)
     game = Game(1)
     game.game_status = game_status.playing
-    game.level = 100
+    # game.level = 11
 
     board2 = Board(WIDTH, HEIGHT)
 
@@ -535,4 +551,3 @@ def single_game():
         pygame.display.update()
 
         fpsClock.tick(FPS)
-
