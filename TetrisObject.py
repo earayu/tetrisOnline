@@ -4,6 +4,7 @@ from enum import Enum
 from persistence import *
 
 
+
 # 游戏基本设置
 WIDTH = 16
 HEIGHT = 28
@@ -456,6 +457,7 @@ def single_game():
     board = Board(WIDTH, HEIGHT)
     game = Game(1)
     game.game_status = game_status.playing
+    game.level = 100
 
     board2 = Board(WIDTH, HEIGHT)
 
@@ -514,10 +516,22 @@ def single_game():
 
         if board.dead:
             result_screen("lose", SURFACE)
+            for event in pygame.event.get():
+                if event.type == QUIT:
+                    terminate(sock)
+                if event.type == KEYDOWN:
+                    if event.key == K_RETURN:
+                        return 0
         if board2.dead:
             result_screen("win", SURFACE)
+        for event in pygame.event.get():
+            if event.type == QUIT:
+                terminate(sock)
+            if event.type == KEYDOWN:
+                if event.key == K_RETURN:
+                    return 0
 
-        # 渲染一帧
+                    # 渲染一帧
         pygame.display.update()
 
         fpsClock.tick(FPS)

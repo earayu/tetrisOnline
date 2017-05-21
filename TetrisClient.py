@@ -42,7 +42,7 @@ def draw(board, x,y):
     SURFACE.blit(BSURFACE,(x,y))
 
 def terminate(sock):
-    send_key_data(sock, request('quit'))
+    sock.send(request('quit'))
     pygame.quit()
     sys.exit()
 
@@ -104,7 +104,7 @@ def match(sock):
         threading.Thread(target=m, args=(sock,)).start()
 
 def single():
-    single_game()
+    return single_game()
 
 # TODO 响应页面
 def about():
@@ -135,8 +135,9 @@ def menu_screen(menu, sock):
         match(sock)
         f = 1
     elif r == 'single':
-        single()
         f = 2
+        if single()==0:
+            f = 0
     elif r == 'about':
         about()
         f = 3
