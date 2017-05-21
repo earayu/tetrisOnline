@@ -225,17 +225,17 @@ class Board:
         return lines_found
 
     def add_bottom(self, n):
-        for _ in range(n):
+        for i in range(n):
             self.board = self.board[1:]
+            # self.board.append(self.get_bottom())
+            self.board.insert(-1,self.get_bottom())
 
-            def get_bottom():
-                import random
-                btm = [random.randint(0, 1) for x in range(self.width)]
-                while sum(btm) >= self.width * 0.7 or sum(btm) <= self.width * 0.3:
-                    btm = [random.randint(0, 1) for x in range(self.width)]
-                return btm
-
-            self.board.append(get_bottom())
+    def get_bottom(self):
+        import random
+        btm = [random.randint(0, 1) for x in range(self.width)]
+        while sum(btm) >= self.width * 0.7 or sum(btm) <= self.width * 0.3:
+            btm = [random.randint(0, 1) for x in range(self.width)]
+        return btm
 
     def move_piece(self, motion_state):
         if motion_state == K_LEFT:
@@ -400,6 +400,8 @@ class Game(object):
             # playing_games.pop(self.game_id)
             import persistence
             persistence.add_game(self)
+            for p in self.player.values():
+                persistence.update_score(p.username, p.score, not p.board.dead)
 
     # TODO 有一个玩家退出游戏
     def quit(self, player_id):

@@ -42,3 +42,19 @@ def add_game(game):
         execute(sql=sql,args=args)
 
 
+
+def add_player(username, password, email, phone):
+    sql = 'INSERT INTO player (username,password,email,phone,register_time,score,won_games,games)' \
+          'VALUES (%s,PASSWORD(%s),%s,%s,now(),0,0,0)'
+    args = (username, password, email, phone)
+    execute(sql=sql, args=args)
+
+
+def update_score(username, score, won):
+    won = 1 if won == True else 0
+    sql = 'UPDATE player SET score = score+%s, won_games = won_games + %s, games = games + 0.25 WHERE username = %s'
+    args = (score/2, won/2, username)
+    execute(sql=sql, args=args)
+
+# update_score('earayu',10, False)
+

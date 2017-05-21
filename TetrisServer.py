@@ -140,7 +140,7 @@ selector.register(s, selectors.EVENT_READ, accept)
 
 
 #TODO 方块速率下降调整，或许下降速度应该跟帧数和水平挂钩，而不只是时间
-def schedule_move_down(interval=0.02):
+def schedule_move_down(interval=0.01):
     def move_down():
         while True:
             for game in playing_games.values():

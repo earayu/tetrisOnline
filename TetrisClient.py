@@ -60,7 +60,8 @@ def get_board(sock):
         return
 
     sock.sendall(request('show'))
-    raw = sock.recv(8000)
+    raw = sock.recv(18000)
+    print(raw)
     raw_recv_data = json.loads(raw.decode('utf-8'))
     # TODO 支持更多人游戏，要按照player_id分离json
     for recv_data in raw_recv_data:
