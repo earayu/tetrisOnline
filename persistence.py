@@ -56,5 +56,7 @@ def update_score(username, score, won):
     args = (score/2, won/2, username)
     execute(sql=sql, args=args)
 
-# update_score('earayu',10, False)
-
+def login(username,password):
+    sql = 'SELECT * FROM player WHERE username = %s AND password = PASSWORD(%s)'
+    args = (username,password)
+    return True if select(sql=sql, args=args) is not () else False

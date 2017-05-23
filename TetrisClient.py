@@ -2,6 +2,7 @@ import socket
 from TetrisObject import *
 import json, threading
 import Menu
+import login
 
 
 def restart():
@@ -202,7 +203,15 @@ def process_key_event(sock, frames=4):
         elif key_dir == K_DOWN:
             send_key_data(sock, request('down'))
 
-USERNAME = input('username:')
+
+
+USERNAME = login.app.username
+login.root.withdraw()
+
+assert USERNAME is not None
+
+
+
 FINISH = False
 
 # 123.206.180.79   192.168.130.128
