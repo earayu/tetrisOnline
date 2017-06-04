@@ -52,8 +52,9 @@ def add_player(username, password, email, phone):
 
 def update_score(username, score, won):
     won = 1 if won == True else 0
-    sql = 'UPDATE player SET score = score+%s, won_games = won_games + %s, games = games + 0.25 WHERE username = %s'
-    args = (score/2, won/2, username)
+    sql = 'UPDATE player SET score = score+%s, won_games = won_games + %s, games = games + 1 WHERE username = %s'
+    args = (score, won, username)
+    print(sql % args)
     execute(sql=sql, args=args)
 
 def login(username,password):

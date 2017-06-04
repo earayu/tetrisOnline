@@ -328,6 +328,7 @@ class Game(object):
     is_paused = False
     starting_level = 1
     level = 1
+    flag = 0
 
     def __init__(self, starting_level=1):
         self.game_status = game_status.init
@@ -397,12 +398,14 @@ class Game(object):
                 p.conn.send(zlib.compress(data))
 
     def finish(self):
-        if self.game_id in playing_games:
-            # playing_games.pop(self.game_id)
-            import persistence
-            persistence.add_game(self)
-            for p in self.player.values():
-                persistence.update_score(p.username, p.score, not p.board.dead)
+        if self.flag is 0:
+            self.flag = 1
+            if self.game_id in playing_games:
+                # playing_games.pop(self.game_id)
+                import persistence
+                persistence.add_game(self)
+                for p in self.player.values():
+                    persistence.update_score(p.username, p.score, not p.board.dead)
 
     # TODO 有一个玩家退出游戏
     def quit(self, player_id):
